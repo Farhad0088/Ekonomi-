@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Ekonomi">
+<meta name="theme-color" content="#EEF0EC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1413" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAACc0lEQVR42u3dsU3DQBSAYRtlFDdUDIHEBnTMkM4NA9C4ywx0bIDEEFQ0GSGKMgIdSkFj37s7+/L9vQ/k+/JsF4n78+XUSf915xQIDsEhOASH4BAcgkNwCA7BIcEhOASH4BAcgkNwCA7BITgkOASH4BAcKtku8fjh/sFJzN3x57vK3+0Xfx0Si+aJuKwoGoexUb7y59zkEBwqhqPW/bMbUpNDq6hP/GUfd6ZNzowYHHLPITgkOASHkto5BWUaxv3sh5TpsO1HWeVgsRIiLiurlhGyAhxtyqjrA461y6joAw7BseWxUWt4wCE4BIfgEByCQ3AIDsEhOASHBIfgEByCQ3AIDsEhOASH4JDgEByCQ3AIDsEhOASH4BAcEhyCQ3AIDsEhOASH4BAcgkM3XLPvW/l8fpx7yNPHFxCN41jA4vpARJq9rCyWEbgCHG3K4KNNHLE7yoenFd0AjhwfdMPD5BAcgkNwCA7BITgEh+AQHIJDgkNwCA7BITgEh+AQHIJDcEhwCA7BIThUtLCfYHgZ3+Ye8j692oDGcSxgcX0gIs1eVhbLCFxBa8QRta98tIYjdkf58LSiG8CR44NueJgcgkNwCA7BIcEhOASH4BAcgkNwCA7BITgkOASH4BAcgkMbxZHja2opa+Z4jXTKmsfpEP7/5FjT5FBxHLHDI3212OGRvlrsB7382EidHFE+otaJ8hG1TtSOVpERcFlJ39fYCZS+r7ETKH1fa8nouq4/X04hC63t9zkWvE86x13tX8O43xCLYBxyQyo4JDgEh+AQHIJDcAgOwSE4BIfgkOAQHIJDcAgOwSE4BIfgEBwSHIJDcChPvwcKiZ1zSUj9AAAAAElFTkSuQmCC">
+<title>Ekonomi</title>
+<style>
+:root{
+  --paper:#EEF0EC; --card:#FFFFFF; --ink:#12191B; --muted:#6A7A7B; --line:#DDE2DD;
+  --petrol:#12655A; --slate:#4A6572; --clay:#A8452F; --sand:#B5811F; --plum:#6B4A6E;
+  --lake:#3D7EA6; --stone:#8A9490; --good:#12655A; --bad:#A8452F;
+  --r:16px; --pad:16px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#0E1413; --card:#171F1E; --ink:#E9EEEA; --muted:#8E9C99; --line:#25322F;
+    --petrol:#43A992; --slate:#7C99A8; --clay:#D9705A; --sand:#D3A24A; --plum:#A57FA8;
+    --lake:#6FAAD0; --stone:#9AA5A1; --good:#43A992; --bad:#D9705A;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:16px; line-height:1.45;
+  padding-bottom:calc(78px + env(safe-area-inset-bottom));
+  -webkit-text-size-adjust:100%;
+}
+.num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.serif{font-family:ui-serif,"New York",Georgia,serif}
+
+/* header */
+header{
+  position:sticky;top:0;z-index:20;background:var(--paper);
+  padding:calc(env(safe-area-inset-top) + 10px) var(--pad) 10px;
+  border-bottom:1px solid var(--line);
+}
+.monthbar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.monthbar h1{margin:0;font-size:19px;font-weight:600;letter-spacing:-.01em;text-transform:capitalize}
+.monthbar button{
+  border:1px solid var(--line);background:var(--card);color:var(--ink);
+  width:38px;height:38px;border-radius:12px;font-size:17px;line-height:1;cursor:pointer
+}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+main{padding:14px var(--pad) 24px;max-width:640px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.card h2{margin:0 0 12px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* signature: flödesbalken */
+.hero{padding-bottom:18px}
+.hero .amount{font-size:40px;line-height:1;font-weight:600;letter-spacing:-.03em;margin:2px 0 2px}
+.hero .sub{color:var(--muted);font-size:14px}
+.flow{display:flex;height:14px;border-radius:7px;overflow:hidden;margin:18px 0 12px;background:var(--line)}
+.flow span{display:block;height:100%}
+.legend{display:flex;flex-direction:column;gap:9px}
+.legend .row{display:flex;align-items:center;gap:10px;font-size:15px}
+.dot{width:10px;height:10px;border-radius:3px;flex:none}
+.legend .row .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.legend .row .val{font-weight:600}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.stat .k{font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.stat .v{font-size:22px;font-weight:600;letter-spacing:-.02em;margin-top:4px}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:8px 0}
+.bar > i{display:block;height:100%;background:var(--petrol)}
+
+ul.list{list-style:none;margin:0;padding:0}
+ul.list li{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+ul.list li:last-child{border-bottom:0}
+ul.list .who{flex:1;min-width:0}
+ul.list .who b{display:block;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ul.list .who small{color:var(--muted);font-size:12px}
+ul.list .kr{font-weight:600;white-space:nowrap}
+.x{border:0;background:none;color:var(--muted);font-size:20px;padding:0 2px;cursor:pointer;line-height:1}
+
+input,select,button,textarea{font-family:inherit;font-size:16px}
+input[type=text],input[type=number],input[type=date],select{
+  width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:12px;
+  background:var(--paper);color:var(--ink);appearance:none
+}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--petrol);outline-offset:1px}
+label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.field{margin-bottom:10px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{
+  width:100%;padding:14px;border-radius:12px;border:0;background:var(--petrol);color:#fff;
+  font-weight:600;cursor:pointer;letter-spacing:.01em
+}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.sm{padding:10px;font-size:14px}
+.hint{font-size:13px;color:var(--muted);margin:8px 0 0}
+.chip{
+  border:1px solid var(--line);background:var(--paper);color:var(--muted);
+  border-radius:999px;padding:5px 11px;font-size:13px;font-weight:600;cursor:pointer
+}
+.catsel{border:0;background:none;width:auto;padding:4px 0;font-size:12px;color:var(--muted);font-weight:600}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+
+/* tabbar */
+nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  background:var(--card);
+  background:color-mix(in srgb,var(--card) 92%, transparent);
+  backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);
+  border-top:1px solid var(--line);
+  display:flex;padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+}
+nav button{
+  flex:1;background:none;border:0;color:var(--muted);font-size:11px;font-weight:600;
+  padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;
+  letter-spacing:.02em;border-radius:10px
+}
+nav button .ic{font-size:17px;line-height:1}
+nav button[aria-current=page]{color:var(--petrol)}
+#toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom));
+  background:var(--ink);color:var(--paper);padding:11px 16px;border-radius:12px;font-size:14px;
+  z-index:50;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center
+}
+#toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="monthbar">
+    <button id="prevM" aria-label="Föregående månad">‹</button>
+    <div style="text-align:center">
+      <div class="eyebrow" id="tabName">Översikt</div>
+      <h1 id="monthLabel">augusti 2026</h1>
+    </div>
+    <button id="nextM" aria-label="Nästa månad">›</button>
+  </div>
+</header>
+
+<main id="view"></main>
+
+<nav>
+  <button data-tab="hem" aria-current="page"><span class="ic">◎</span>Hem</button>
+  <button data-tab="utgifter"><span class="ic">＋</span>Utgifter</button>
+  <button data-tab="fasta"><span class="ic">≡</span>Fasta</button>
+  <button data-tab="spara"><span class="ic">◆</span>Sparande</button>
+  <button data-tab="invest"><span class="ic">▲</span>Invest</button>
+</nav>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ---------- data ---------- */
+var KEY="ekonomi.v1";
+var CATS=["Mat","Boende","Transport","Abonnemang","Shopping","Nöjen","Övrigt"];
+var CATCOLOR={Mat:"var(--petrol)",Boende:"var(--slate)",Transport:"var(--sand)",
+  Abonnemang:"var(--plum)",Shopping:"var(--clay)","Nöjen":"var(--lake)","Övrigt":"var(--stone)"};
+var KEYWORDS={
+  Mat:["ica","coop","willys","hemköp","lidl","citygross","city gross","matbutik","restaurang","mcdonalds","max","burger","sushi","lunch","fika","café","cafe","espresso house","pressbyrån","seven","foodora","uber eats","wolt","pizza","kebab","bageri"],
+  Boende:["hyra","el ","elräkning","bolån","amortering","hemförsäkring","bredband","vatten","sopor","fjärrvärme","avgift","brf","hemma"],
+  Transport:["sl","bensin","diesel","tanka","circle k","preem","ok q8","st1","ingo","parkering","p-avgift","trängsel","tull","buss","tåg","sj","pendel","taxi","uber","bilverkstad","däck","besiktning","bilförsäkring"],
+  Abonnemang:["spotify","netflix","hbo","max ","disney","viaplay","prime","telia","tele2","comviq","telenor","tre","halebop","mobil","icloud","gym","sats","fitness24","nordic wellness","prenumeration","abonnemang","storytel","youtube"],
+  Shopping:["h&m","hm ","zara","elgiganten","webhallen","amazon","clas ohlson","ikea","jula","biltema","kläder","skor","zalando","kjell","apple","boozt","xxl"],
+  "Nöjen":["bio","filmstaden","systembolaget","systemet","pub","bar","krogen","konsert","spel","steam","playstation","padel","biljett","nöje","utekväll","resa","hotell"]
+};
+var INVTYPES=["Aktier","Fonder","ETF","Räntor","Krypto","Övrigt"];
+
+var DEFAULT={income:[],fixed:[],expenses:[],investments:[],
+  settings:{monthlyGoal:0,totalGoal:0,startSavings:0}};
+
+function load(){
+  try{
+    var raw=localStorage.getItem(KEY);
+    if(!raw) return JSON.parse(JSON.stringify(DEFAULT));
+    var d=JSON.parse(raw);
+    for(var k in DEFAULT){ if(!(k in d)) d[k]=JSON.parse(JSON.stringify(DEFAULT[k])); }
+    for(var s in DEFAULT.settings){ if(d.settings[s]===undefined) d.settings[s]=DEFAULT.settings[s]; }
+    return d;
+  }catch(e){ return JSON.parse(JSON.stringify(DEFAULT)); }
+}
+var db=load();
+function save(){
+  try{ localStorage.setItem(KEY,JSON.stringify(db)); }
+  catch(e){ toast("Kunde inte spara. Frigör utrymme i Safari."); }
+}
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+/* ---------- hjälp ---------- */
+function kr(n){ return Math.round(n).toLocaleString("sv-SE")+" kr"; }
+function pct(n){ return (Math.round(n*10)/10).toLocaleString("sv-SE")+" %"; }
+function todayISO(){ var d=new Date(); return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate()); }
+function p2(n){ return (n<10?"0":"")+n; }
+function mKey(d){ return d.slice(0,7); }
+function monthName(key){
+  var p=key.split("-"); var d=new Date(+p[0],+p[1]-1,1);
+  return d.toLocaleDateString("sv-SE",{month:"long",year:"numeric"});
+}
+function shiftMonth(key,delta){
+  var p=key.split("-"); var d=new Date(+p[0],+p[1]-1+delta,1);
+  return d.getFullYear()+"-"+p2(d.getMonth()+1);
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+function toast(msg){
+  var t=document.getElementById("toast"); t.textContent=msg; t.classList.add("on");
+  clearTimeout(toast._t); toast._t=setTimeout(function(){ t.classList.remove("on"); },2200);
+}
+function num(v){ var n=parseFloat(String(v).replace(/\s/g,"").replace(",",".")); return isFinite(n)?n:0; }
+
+/* ---------- beräkningar ---------- */
+var view=mKey(todayISO());
+function sumIncome(){ return db.income.reduce(function(a,b){return a+b.amount;},0); }
+function sumFixed(){ return db.fixed.reduce(function(a,b){return a+b.amount;},0); }
+function expOf(m){ return db.expenses.filter(function(e){return mKey(e.date)===m;}); }
+function sumVar(m){ return expOf(m).reduce(function(a,b){return a+b.amount;},0); }
+function savedOf(m){ return sumIncome()-sumFixed()-sumVar(m); }
+function investedIn(m){
+  var s=0;
+  db.investments.forEach(function(i){
+    (i.contribs||[]).forEach(function(c){ if(mKey(c.date)===m) s+=c.amount; });
+  });
+  return s;
+}
+function activeMonths(){
+  var set={}; db.expenses.forEach(function(e){ set[mKey(e.date)]=1; });
+  var arr=Object.keys(set); arr.sort(); return arr;
+}
+function totalSaved(){
+  return db.settings.startSavings + activeMonths().reduce(function(a,m){return a+savedOf(m);},0);
+}
+function avgSaved(){
+  var ms=activeMonths().slice(-3);
+  if(!ms.length) return savedOf(view);
+  return ms.reduce(function(a,m){return a+savedOf(m);},0)/ms.length;
+}
+function invTotals(){
+  var inv=0,val=0;
+  db.investments.forEach(function(i){ inv+=i.invested; val+=i.value; });
+  return {invested:inv,value:val,pl:val-inv,ret:inv>0?((val-inv)/inv*100):0};
+}
+
+/* ---------- parser: "ICA – 650 kr – Mat" ---------- */
+function parseExpense(text){
+  var t=text.trim(); if(!t) return null;
+  var cat=null;
+  // uttalad kategori sist eller var som helst
+  CATS.forEach(function(c){
+    var re=new RegExp("(^|[\\s,;\\-–—])"+c+"([\\s,;\\-–—]|$)","i");
+    if(!cat && re.test(t)){ cat=c; t=t.replace(re," "); }
+  });
+  var m=t.match(/-?\d[\d\s]*([.,]\d{1,2})?/);
+  if(!m) return null;
+  var amount=num(m[0]);
+  if(!amount) return null;
+  var name=(t.slice(0,m.index)+" "+t.slice(m.index+m[0].length))
+    .replace(/\bkr\b|\bsek\b|:-/gi," ")
+    .replace(/[\-–—,;]+/g," ").replace(/\s+/g," ").trim();
+  if(!cat){
+    var low=(name+" ").toLowerCase();
+    for(var c2 in KEYWORDS){
+      for(var i=0;i<KEYWORDS[c2].length;i++){
+        if(low.indexOf(KEYWORDS[c2][i])>-1){ cat=c2; break; }
+      }
+      if(cat) break;
+    }
+  }
+  if(!name) name="Utgift";
+  name=name.charAt(0).toUpperCase()+name.slice(1);
+  return {name:name,amount:Math.abs(amount),cat:cat||"Övrigt"};
+}
+
+/* ---------- vyer ---------- */
+var tab="hem";
+var TABNAMES={hem:"Översikt",utgifter:"Rörliga utgifter",fasta:"Inkomst & fasta",spara:"Sparande",invest:"Investeringar"};
+
+function render(){
+  document.getElementById("monthLabel").textContent=monthName(view);
+  document.getElementById("tabName").textContent=TABNAMES[tab];
+  var el=document.getElementById("view");
+  el.innerHTML=({hem:viewHem,utgifter:viewUtgifter,fasta:viewFasta,spara:viewSpara,invest:viewInvest})[tab]();
+  wire();
+  window.scrollTo(0,0);
+}
+
+function viewHem(){
+  var inc=sumIncome(), fix=sumFixed(), vr=sumVar(view), sav=inc-fix-vr;
+  var rate=inc>0?(sav/inc*100):0;
+  var invM=investedIn(view), it=invTotals();
+  var base=Math.max(inc, fix+vr+Math.max(sav,0), 1);
+  var h="";
+
+  if(inc===0 && vr===0 && fix===0){
+    h+='<div class="card"><h2>Kom igång</h2>'+
+      '<p style="margin:0 0 12px">Lägg in din inkomst och dina fasta utgifter en gång — sedan räknar appen resten åt dig varje månad.</p>'+
+      '<button class="btn" data-go="fasta">Lägg in inkomst</button></div>';
+  }
+
+  h+='<div class="card hero">'+
+    '<div class="eyebrow">Kvar att spara denna månad</div>'+
+    '<div class="amount num serif '+(sav<0?"neg":"")+'">'+kr(sav)+'</div>'+
+    '<div class="sub">'+pct(rate)+' av '+kr(inc)+'</div>'+
+    '<div class="flow">'+
+      '<span style="background:var(--slate);width:'+(fix/base*100)+'%"></span>'+
+      '<span style="background:var(--clay);width:'+(vr/base*100)+'%"></span>'+
+      '<span style="background:var(--petrol);width:'+(Math.max(sav,0)/base*100)+'%"></span>'+
+    '</div>'+
+    '<div class="legend">'+
+      legendRow("var(--slate)","Fasta utgifter",fix)+
+      legendRow("var(--clay)","Rörliga utgifter",vr)+
+      legendRow("var(--petrol)","Sparat",sav)+
+    '</div></div>';
+
+  h+='<div class="grid">'+
+    stat("Inkomst",kr(inc))+
+    stat("Utgifter",kr(fix+vr))+
+    stat("Spargrad",pct(rate),rate>=0?"pos":"neg")+
+    stat("Investerat i mån.",kr(invM))+
+    '</div>';
+
+  // kategorier
+  var byCat={},list=expOf(view);
+  list.forEach(function(e){ byCat[e.cat]=(byCat[e.cat]||0)+e.amount; });
+  var keys=Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a];});
+  h+='<div class="card"><h2>Vart pengarna tar vägen</h2>';
+  if(!keys.length){ h+='<div class="empty">Inga rörliga utgifter registrerade den här månaden.</div>'; }
+  else{
+    var max=byCat[keys[0]];
+    h+='<div class="legend">';
+    keys.forEach(function(c){
+      h+='<div><div class="row"><span class="dot" style="background:'+CATCOLOR[c]+'"></span>'+
+        '<span class="lbl">'+c+'</span><span class="val num">'+kr(byCat[c])+'</span></div>'+
+        '<div class="bar"><i style="width:'+(byCat[c]/max*100)+'%;background:'+CATCOLOR[c]+'"></i></div></div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+
+  // sparmål
+  var g=db.settings.monthlyGoal;
+  if(g>0){
+    var d=new Date(), dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+    var isNow=view===mKey(todayISO());
+    var expected=isNow?g*(d.getDate()/dim):g;
+    var diff=sav-expected;
+    h+='<div class="card"><h2>Månadens sparmål</h2>'+
+      '<div class="row" style="display:flex;justify-content:space-between"><span>'+kr(Math.max(sav,0))+' av '+kr(g)+'</span>'+
+      '<b class="'+(diff>=0?"pos":"neg")+'">'+(diff>=0?"+":"")+kr(diff)+'</b></div>'+
+      '<div class="bar"><i style="width:'+Math.min(100,Math.max(0,sav/g*100))+'%"></i></div>'+
+      '<p class="hint">'+(diff>=0?"Du ligger före planen":"Du ligger efter planen")+
+      (isNow?" ("+d.getDate()+"/"+dim+" av månaden)":"")+'.</p></div>';
+  }
+
+  if(it.value>0){
+    h+='<div class="card"><h2>Portfölj</h2>'+
+      '<div class="grid">'+stat("Värde",kr(it.value))+stat("Vinst/förlust",(it.pl>=0?"+":"")+kr(it.pl),it.pl>=0?"pos":"neg")+'</div>'+
+      '<p class="hint">Avkastning '+pct(it.ret)+' på '+kr(it.invested)+' investerat.</p></div>';
+  }
+
+  // prognos
+  var av=avgSaved();
+  if(av!==0 || totalSaved()!==0){
+    var t=totalSaved();
+    h+='<div class="card"><h2>Prognos</h2>'+
+      '<p class="hint" style="margin:0 0 10px">Räknat på '+kr(av)+' sparat per månad (snitt senaste månaderna).</p>'+
+      '<ul class="list">'+
+      liKV("Sparat idag",kr(t))+
+      liKV("Om 6 månader",kr(t+av*6))+
+      liKV("Om 12 månader",kr(t+av*12))+
+      '</ul>';
+    var tg=db.settings.totalGoal;
+    if(tg>0 && av>0 && t<tg){
+      var n=Math.ceil((tg-t)/av);
+      var dd=new Date(); dd.setMonth(dd.getMonth()+n);
+      h+='<p class="hint">Ditt mål på '+kr(tg)+' nås om ca '+n+' månader ('+dd.toLocaleDateString("sv-SE",{month:"long",year:"numeric"})+').</p>';
+    }
+    h+='</div>';
+  }
+  return h;
+}
+function legendRow(color,label,v){
+  return '<div class="row"><span class="dot" style="background:'+color+'"></span>'+
+    '<span class="lbl">'+label+'</span><span class="val num">'+kr(v)+'</span></div>';
+}
+function stat(k,v,cls){ return '<div class="stat"><div class="k">'+k+'</div><div class="v num '+(cls||"")+'">'+v+'</div></div>'; }
+function liKV(k,v){ return '<li><span class="who"><b>'+k+'</b></span><span class="kr num">'+v+'</span></li>'; }
+
+function viewUtgifter(){
+  var list=expOf(view).slice().sort(function(a,b){return a.date<b.date?1:-1;});
+  var h='<div class="card"><h2>Lägg till utgift</h2>'+
+    '<div class="field"><input type="text" id="qa" placeholder="ICA – 650 kr – Mat" autocapitalize="sentences" autocomplete="off" enterkeyhint="done"></div>'+
+    '<div class="field"><input type="date" id="qd" value="'+todayISO()+'"></div>'+
+    '<button class="btn" id="qadd">Lägg till</button>'+
+    '<p class="hint">Skriv fritt: <b>Ica 650</b>, <b>SL 1040 kr</b> eller <b>Klippning 400 – Övrigt</b>. Appen gissar kategorin och du kan ändra den i listan.</p></div>';
+
+  h+='<div class="card"><h2>'+monthName(view)+' · '+kr(sumVar(view))+'</h2>';
+  if(!list.length) h+='<div class="empty">Inget registrerat än. Första utgiften lägger du till ovan.</div>';
+  else{
+    h+='<ul class="list">';
+    list.forEach(function(e){
+      h+='<li><span class="dot" style="background:'+CATCOLOR[e.cat]+'"></span>'+
+        '<span class="who"><b>'+esc(e.name)+'</b>'+
+        '<select class="catsel" data-cat="'+e.id+'">'+CATS.map(function(c){
+          return '<option'+(c===e.cat?" selected":"")+'>'+c+'</option>';}).join("")+'</select>'+
+        ' <small>· '+e.date.slice(8)+"/"+(+e.date.slice(5,7))+'</small></span>'+
+        '<span class="kr num">'+kr(e.amount)+'</span>'+
+        '<button class="x" data-del="'+e.id+'" aria-label="Ta bort">×</button></li>';
+    });
+    h+='</ul>';
+  }
+  return h+'</div>';
+}
+
+function viewFasta(){
+  var h='<div class="card"><h2>Inkomst per månad</h2>'+rows(db.income,"income")+
+    '<div class="two" style="margin-top:10px">'+
+    '<input type="text" id="inName" placeholder="Lön" autocomplete="off">'+
+    '<input type="number" id="inAmt" placeholder="30000" inputmode="numeric"></div>'+
+    '<button class="btn ghost sm" id="addIncome" style="margin-top:8px">Lägg till inkomst</button>'+
+    '<p class="hint">Totalt: <b>'+kr(sumIncome())+'</b> per månad.</p></div>';
+
+  h+='<div class="card"><h2>Fasta utgifter</h2>'+rows(db.fixed,"fixed")+
+    '<div class="two" style="margin-top:10px">'+
+    '<input type="text" id="fxName" placeholder="Hyra" autocomplete="off">'+
+    '<input type="number" id="fxAmt" placeholder="9000" inputmode="numeric"></div>'+
+    '<button class="btn ghost sm" id="addFixed" style="margin-top:8px">Lägg till fast utgift</button>'+
+    '<p class="hint">Totalt: <b>'+kr(sumFixed())+'</b> per månad. Dessa räknas automatiskt varje månad.</p></div>';
+
+  h+='<div class="card"><h2>Säkerhetskopia</h2>'+
+    '<p class="hint" style="margin:0 0 12px">All data ligger bara i den här webbläsaren på telefonen. Spara en kopia då och då.</p>'+
+    '<button class="btn ghost sm" id="exp" style="margin-bottom:8px">Exportera data</button>'+
+    '<button class="btn ghost sm" id="impBtn">Importera data</button>'+
+    '<input type="file" id="imp" accept="application/json,.json" style="display:none">'+
+    '<textarea id="expOut" style="display:none;width:100%;height:120px;margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--paper);color:var(--ink)"></textarea></div>';
+  return h;
+}
+function rows(arr,kind){
+  if(!arr.length) return '<div class="empty">Inget tillagt än.</div>';
+  var h='<ul class="list">';
+  arr.forEach(function(r){
+    h+='<li><span class="who"><b>'+esc(r.name)+'</b></span><span class="kr num">'+kr(r.amount)+'</span>'+
+      '<button class="x" data-rm="'+kind+':'+r.id+'" aria-label="Ta bort">×</button></li>';
+  });
+  return h+'</ul>';
+}
+
+function viewSpara(){
+  var s=db.settings, sav=savedOf(view), inc=sumIncome();
+  var t=totalSaved(), pctTotal=s.totalGoal>0?Math.min(100,t/s.totalGoal*100):0;
+  var h='<div class="card"><h2>Mina mål</h2>'+
+    '<div class="field"><label>Sparmål per månad</label><input type="number" id="gM" inputmode="numeric" value="'+(s.monthlyGoal||"")+'" placeholder="10000"></div>'+
+    '<div class="field"><label>Totalt sparmål</label><input type="number" id="gT" inputmode="numeric" value="'+(s.totalGoal||"")+'" placeholder="100000"></div>'+
+    '<div class="field"><label>Redan sparat sedan tidigare</label><input type="number" id="gS" inputmode="numeric" value="'+(s.startSavings||"")+'" placeholder="0"></div>'+
+    '<button class="btn" id="saveGoals">Spara mål</button></div>';
+
+  h+='<div class="card"><h2>Denna månad</h2><ul class="list">'+
+    liKV("Sparat",kr(sav))+
+    liKV("Mål",kr(s.monthlyGoal))+
+    liKV("Återstår",kr(Math.max(0,s.monthlyGoal-sav)))+
+    liKV("Spargrad",inc>0?pct(sav/inc*100):"–")+
+    '</ul></div>';
+
+  h+='<div class="card"><h2>Mot totalmålet</h2>'+
+    '<div style="display:flex;justify-content:space-between"><span class="num">'+kr(t)+'</span><span class="num" style="color:var(--muted)">'+kr(s.totalGoal)+'</span></div>'+
+    '<div class="bar"><i style="width:'+pctTotal+'%"></i></div>'+
+    '<p class="hint">'+(s.totalGoal>0?pct(pctTotal)+" av målet. Återstår "+kr(Math.max(0,s.totalGoal-t))+".":"Sätt ett totalt sparmål ovan så visas utvecklingen här.")+'</p></div>';
+
+  var ms=activeMonths().slice(-6);
+  if(ms.length){
+    h+='<div class="card"><h2>Historik</h2><ul class="list">';
+    ms.reverse().forEach(function(m){
+      var v=savedOf(m);
+      h+='<li><span class="who"><b style="text-transform:capitalize">'+monthName(m)+'</b></span>'+
+        '<span class="kr num '+(v>=0?"pos":"neg")+'">'+kr(v)+'</span></li>';
+    });
+    h+='</ul></div>';
+  }
+  return h;
+}
+
+function viewInvest(){
+  var it=invTotals();
+  var h='<div class="card"><h2>Portfölj</h2><div class="grid">'+
+    stat("Investerat",kr(it.invested))+stat("Värde",kr(it.value))+
+    stat("Vinst/förlust",(it.pl>=0?"+":"")+kr(it.pl),it.pl>=0?"pos":"neg")+
+    stat("Avkastning",(it.ret>=0?"+":"")+pct(it.ret),it.ret>=0?"pos":"neg")+'</div></div>';
+
+  h+='<div class="card"><h2>Innehav</h2>';
+  if(!db.investments.length) h+='<div class="empty">Lägg till ditt första innehav nedan.</div>';
+  db.investments.forEach(function(i){
+    var pl=i.value-i.invested, r=i.invested>0?pl/i.invested*100:0;
+    var share=it.value>0?i.value/it.value*100:0;
+    h+='<div style="padding:12px 0;border-bottom:1px solid var(--line)">'+
+      '<div style="display:flex;align-items:center;gap:8px">'+
+        '<b style="flex:1">'+esc(i.name)+' <small style="color:var(--muted);font-weight:400">'+esc(i.type)+'</small></b>'+
+        '<span class="num" style="font-weight:600">'+kr(i.value)+'</span>'+
+        '<button class="x" data-rminv="'+i.id+'" aria-label="Ta bort">×</button></div>'+
+      '<div class="bar"><i style="width:'+share+'%"></i></div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted)">'+
+        '<span>'+pct(share)+' av portföljen</span>'+
+        '<span class="'+(pl>=0?"pos":"neg")+'">'+(pl>=0?"+":"")+kr(pl)+' · '+(r>=0?"+":"")+pct(r)+'</span></div>'+
+      '<div class="two" style="margin-top:8px">'+
+        '<div><label>Investerat</label><input type="number" inputmode="numeric" data-inv="'+i.id+'" data-f="invested" value="'+i.invested+'"></div>'+
+        '<div><label>Värde nu</label><input type="number" inputmode="numeric" data-inv="'+i.id+'" data-f="value" value="'+i.value+'"></div>'+
+      '</div></div>';
+  });
+  h+='</div>';
+
+  h+='<div class="card"><h2>Nytt innehav</h2>'+
+    '<div class="field"><input type="text" id="ivName" placeholder="t.ex. Avanza Zero" autocomplete="off"></div>'+
+    '<div class="field"><select id="ivType">'+INVTYPES.map(function(t){return "<option>"+t+"</option>";}).join("")+'</select></div>'+
+    '<div class="two"><input type="number" id="ivInv" placeholder="Investerat" inputmode="numeric">'+
+    '<input type="number" id="ivVal" placeholder="Värde nu" inputmode="numeric"></div>'+
+    '<button class="btn" id="addInv" style="margin-top:10px">Lägg till innehav</button>'+
+    '<p class="hint">Höjer du "Investerat" registreras skillnaden som en insättning den här månaden.</p></div>';
+  return h;
+}
+
+/* ---------- händelser ---------- */
+function on(sel,ev,fn){ var e=document.getElementById(sel); if(e) e.addEventListener(ev,fn); }
+
+function wire(){
+  document.querySelectorAll("[data-go]").forEach(function(b){
+    b.onclick=function(){ setTab(b.getAttribute("data-go")); };
+  });
+  // utgifter
+  on("qadd","click",addQuick);
+  on("qa","keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); addQuick(); } });
+  document.querySelectorAll("[data-del]").forEach(function(b){
+    b.onclick=function(){
+      db.expenses=db.expenses.filter(function(x){return x.id!==b.getAttribute("data-del");});
+      save(); render(); toast("Borttagen");
+    };
+  });
+  document.querySelectorAll("[data-cat]").forEach(function(s){
+    s.onchange=function(){
+      var e=db.expenses.find(function(x){return x.id===s.getAttribute("data-cat");});
+      if(e){ e.cat=s.value; save(); render(); }
+    };
+  });
+  // fasta
+  on("addIncome","click",function(){
+    var n=document.getElementById("inName").value.trim()||"Inkomst";
+    var a=num(document.getElementById("inAmt").value);
+    if(!a) return toast("Skriv ett belopp");
+    db.income.push({id:uid(),name:n,amount:a}); save(); render();
+  });
+  on("addFixed","click",function(){
+    var n=document.getElementById("fxName").value.trim()||"Fast utgift";
+    var a=num(document.getElementById("fxAmt").value);
+    if(!a) return toast("Skriv ett belopp");
+    db.fixed.push({id:uid(),name:n,amount:a}); save(); render();
+  });
+  document.querySelectorAll("[data-rm]").forEach(function(b){
+    b.onclick=function(){
+      var p=b.getAttribute("data-rm").split(":");
+      db[p[0]]=db[p[0]].filter(function(x){return x.id!==p[1];});
+      save(); render();
+    };
+  });
+  // mål
+  on("saveGoals","click",function(){
+    db.settings.monthlyGoal=num(document.getElementById("gM").value);
+    db.settings.totalGoal=num(document.getElementById("gT").value);
+    db.settings.startSavings=num(document.getElementById("gS").value);
+    save(); render(); toast("Målen sparade");
+  });
+  // invest
+  on("addInv","click",function(){
+    var n=document.getElementById("ivName").value.trim();
+    if(!n) return toast("Ge innehavet ett namn");
+    var inv=num(document.getElementById("ivInv").value);
+    db.investments.push({id:uid(),name:n,type:document.getElementById("ivType").value,
+      invested:inv,value:num(document.getElementById("ivVal").value)||inv,
+      contribs:inv?[{date:todayISO(),amount:inv}]:[]});
+    save(); render(); toast("Innehav tillagt");
+  });
+  document.querySelectorAll("[data-inv]").forEach(function(inp){
+    inp.onchange=function(){
+      var i=db.investments.find(function(x){return x.id===inp.getAttribute("data-inv");});
+      if(!i) return;
+      var f=inp.getAttribute("data-f"), v=num(inp.value);
+      if(f==="invested" && v>i.invested){
+        i.contribs=i.contribs||[]; i.contribs.push({date:todayISO(),amount:v-i.invested});
+      }
+      i[f]=v; save(); render();
+    };
+  });
+  document.querySelectorAll("[data-rminv]").forEach(function(b){
+    b.onclick=function(){
+      db.investments=db.investments.filter(function(x){return x.id!==b.getAttribute("data-rminv");});
+      save(); render();
+    };
+  });
+  // backup
+  on("exp","click",function(){
+    var data=JSON.stringify(db,null,2);
+    var ta=document.getElementById("expOut");
+    try{
+      var blob=new Blob([data],{type:"application/json"});
+      var a=document.createElement("a");
+      a.href=URL.createObjectURL(blob); a.download="ekonomi-backup.json"; a.click();
+      setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+      toast("Filen laddas ner");
+    }catch(e){}
+    ta.style.display="block"; ta.value=data; toast("Kopiera texten och spara den");
+  });
+  on("impBtn","click",function(){ document.getElementById("imp").click(); });
+  on("imp","change",function(e){
+    var f=e.target.files[0]; if(!f) return;
+    var r=new FileReader();
+    r.onload=function(){
+      try{
+        var d=JSON.parse(r.result);
+        if(!d.expenses) throw 0;
+        db=d; save(); render(); toast("Data importerad");
+      }catch(err){ toast("Filen kunde inte läsas"); }
+    };
+    r.readAsText(f);
+  });
+}
+
+function addQuick(){
+  var inp=document.getElementById("qa");
+  var p=parseExpense(inp.value);
+  if(!p) return toast("Skriv t.ex. ICA 650");
+  var d=document.getElementById("qd").value||todayISO();
+  db.expenses.push({id:uid(),date:d,name:p.name,amount:p.amount,cat:p.cat});
+  save();
+  var m=mKey(d); if(m!==view) view=m;
+  render();
+  toast(p.name+" · "+kr(p.amount)+" · "+p.cat);
+  setTimeout(function(){ var q=document.getElementById("qa"); if(q){ q.value=""; q.focus(); } },10);
+}
+
+function setTab(t){
+  tab=t;
+  document.querySelectorAll("nav button").forEach(function(b){
+    if(b.getAttribute("data-tab")===t) b.setAttribute("aria-current","page");
+    else b.removeAttribute("aria-current");
+  });
+  render();
+}
+document.querySelectorAll("nav button").forEach(function(b){
+  b.addEventListener("click",function(){ setTab(b.getAttribute("data-tab")); });
+});
+document.getElementById("prevM").addEventListener("click",function(){ view=shiftMonth(view,-1); render(); });
+document.getElementById("nextM").addEventListener("click",function(){ view=shiftMonth(view,1); render(); });
+
+render();
+</script>
+</body>
+</html>
