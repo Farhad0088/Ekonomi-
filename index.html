@@ -10,6 +10,7 @@
 <meta name="theme-color" content="#EEF0EC" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0E1413" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAACc0lEQVR42u3dsU3DQBSAYRtlFDdUDIHEBnTMkM4NA9C4ywx0bIDEEFQ0GSGKMgIdSkFj37s7+/L9vQ/k+/JsF4n78+XUSf915xQIDsEhOASH4BAcgkNwCA7BIcEhOASH4BAcgkNwCA7BITgkOASH4BAcKtku8fjh/sFJzN3x57vK3+0Xfx0Si+aJuKwoGoexUb7y59zkEBwqhqPW/bMbUpNDq6hP/GUfd6ZNzowYHHLPITgkOASHkto5BWUaxv3sh5TpsO1HWeVgsRIiLiurlhGyAhxtyqjrA461y6joAw7BseWxUWt4wCE4BIfgEByCQ3AIDsEhOASHBIfgEByCQ3AIDsEhOASH4JDgEByCQ3AIDsEhOASH4BAcEhyCQ3AIDsEhOASH4BAcgkM3XLPvW/l8fpx7yNPHFxCN41jA4vpARJq9rCyWEbgCHG3K4KNNHLE7yoenFd0AjhwfdMPD5BAcgkNwCA7BITgEh+AQHIJDgkNwCA7BITgEh+AQHIJDcEhwCA7BIThUtLCfYHgZ3+Ye8j692oDGcSxgcX0gIs1eVhbLCFxBa8QRta98tIYjdkf58LSiG8CR44NueJgcgkNwCA7BIcEhOASH4BAcgkNwCA7BITgkOASH4BAcgkMbxZHja2opa+Z4jXTKmsfpEP7/5FjT5FBxHLHDI3212OGRvlrsB7382EidHFE+otaJ8hG1TtSOVpERcFlJ39fYCZS+r7ETKH1fa8nouq4/X04hC63t9zkWvE86x13tX8O43xCLYBxyQyo4JDgEh+AQHIJDcAgOwSE4BIfgkOAQHIJDcAgOwSE4BIfgEBwSHIJDcChPvwcKiZ1zSUj9AAAAAElFTkSuQmCC">
+<meta name="robots" content="noindex, nofollow">
 <title>Ekonomi</title>
 <style>
 :root{
@@ -159,6 +160,14 @@ ul.status .who b{display:block;font-weight:600;font-size:15px}
 ul.status .who small{color:var(--muted);font-size:13px}
 .answer{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:14.5px}
 .answer p{margin:0 0 10px}
+textarea{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);resize:vertical;font-size:16px}
+.chat{display:flex;flex-direction:column;gap:10px}
+.msg{max-width:92%;padding:11px 13px;border-radius:14px;font-size:14.5px}
+.msg p{margin:0}
+.msg.user{align-self:flex-end;background:var(--petrol);color:#fff;border-bottom-right-radius:5px}
+.msg.assistant{align-self:flex-start;background:var(--paper);border:1px solid var(--line);border-bottom-left-radius:5px}
+.msg.thinking{color:var(--muted);font-style:italic}
+.msg.err{align-self:stretch;background:transparent;border:1px solid var(--bad);color:var(--bad)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -206,7 +215,7 @@ var KEYWORDS={
 var INVTYPES=["Aktier","Fonder","ETF","Räntor","Krypto","Övrigt"];
 
 var DEFAULT={income:[],fixed:[],expenses:[],investments:[],
-  settings:{monthlyGoal:0,totalGoal:0,startSavings:0,riskProfile:"Balanserad",horizonYears:10,cashOverride:0}};
+  settings:{monthlyGoal:0,totalGoal:0,startSavings:0,riskProfile:"Balanserad",horizonYears:10,cashOverride:0,aiModel:"claude-sonnet-5"}};
 
 function load(){
   try{
@@ -680,6 +689,7 @@ function viewCoach(){
   if(coachQ!==null) h+='<div class="answer">'+answerQ(coachQ,d,rows)+'</div>';
   h+='</div>';
 
+  h+=chatCard();
   h+='<p class="hint" style="text-align:center;padding:0 8px 8px">Coachen räknar på dina egna siffror och allmänna principer för sparande. Den är inte finansiell rådgivning och rekommenderar inga enskilda värdepapper.</p>';
   return h;
 }
@@ -785,6 +795,133 @@ function answerQ(i,d,rows){
   return "";
 }
 
+/* ---------- AI: nyckel, kontext, chatt ---------- */
+var AIKEY="ekonomi.apikey", AICHAT="ekonomi.chat";
+var MODELS=[["claude-sonnet-5","Sonnet 5 – bäst resonemang"],["claude-haiku-4-5","Haiku 4.5 – snabb och billig"]];
+var chat=[], aiBusy=false, aiErr=null, showKey=false;
+try{ chat=JSON.parse(localStorage.getItem(AICHAT)||"[]"); }catch(e){ chat=[]; }
+function getKey(){ try{ return localStorage.getItem(AIKEY)||""; }catch(e){ return ""; } }
+function saveChat(){ try{ localStorage.setItem(AICHAT,JSON.stringify(chat.slice(-30))); }catch(e){} }
+
+function aiContext(){
+  var d=coachData(), rows=allocate(d), mix=riskMix();
+  var byCat={}; expOf(view).forEach(function(e){ byCat[e.cat]=(byCat[e.cat]||0)+e.amount; });
+  var hist=activeMonths().slice(-6).map(function(m){ return m+": sparat "+Math.round(savedOf(m))+" kr"; });
+  var inv=db.investments.map(function(i){
+    return "- "+i.name+" ("+i.type+"): investerat "+Math.round(i.invested)+" kr, värde "+Math.round(i.value)+
+      " kr, "+(d.inv.value>0?Math.round(i.value/d.inv.value*100):0)+" % av portföljen";
+  });
+  return [
+    "AKTUELL MÅNAD ("+view+")",
+    "Inkomst: "+Math.round(d.inc)+" kr/mån",
+    "Fasta utgifter: "+Math.round(d.fix)+" kr ("+db.fixed.map(function(f){return f.name+" "+Math.round(f.amount);}).join(", ")+")",
+    "Rörliga utgifter: "+Math.round(d.vr)+" kr, per kategori: "+(Object.keys(byCat).map(function(c){return c+" "+Math.round(byCat[c]);}).join(", ")||"inga"),
+    "Sparat denna månad: "+Math.round(d.sav)+" kr (spargrad "+(d.inc>0?Math.round(d.sav/d.inc*100):0)+" %)",
+    "Redan investerat denna månad: "+Math.round(d.invM)+" kr. Kvar att fördela: "+Math.round(d.over)+" kr",
+    "",
+    "SPARANDE OCH MÅL",
+    "Buffert på konto: "+Math.round(d.cash)+" kr ("+(d.mCost>0?(d.cash/d.mCost).toFixed(1):"0")+" månadsutgifter, mål "+d.p.buf+")",
+    "Månadskostnad totalt: "+Math.round(d.mCost)+" kr",
+    "Månadsmål: "+Math.round(db.settings.monthlyGoal)+" kr. Totalmål: "+Math.round(db.settings.totalGoal)+" kr. Sparat totalt: "+Math.round(totalSaved())+" kr",
+    "Riskprofil: "+db.settings.riskProfile+". Tidshorisont: "+(db.settings.horizonYears||10)+" år",
+    hist.length?"Historik: "+hist.join(" | "):"",
+    "",
+    "PORTFÖLJ",
+    d.inv.value>0?("Investerat "+Math.round(d.inv.invested)+" kr, värde "+Math.round(d.inv.value)+" kr, resultat "+
+      Math.round(d.inv.pl)+" kr ("+d.inv.ret.toFixed(1)+" %)"):"Inga innehav inlagda",
+    inv.join("\n"),
+    mix.tot>0?("Risknivå i portföljen: låg "+Math.round(mix.t.lag/mix.tot*100)+" %, medel "+
+      Math.round(mix.t.medel/mix.tot*100)+" %, hög "+Math.round(mix.t.hog/mix.tot*100)+" %"):"",
+    "",
+    "APPENS EGET FÖRSLAG DENNA MÅNAD",
+    rows.length?rows.map(function(r){return "- "+BLOCKS[r.k].n+": "+Math.round(r.amt)+" kr";}).join("\n"):"Inget överskott att fördela"
+  ].filter(Boolean).join("\n");
+}
+
+var AISYS=[
+"Du är en personlig ekonomicoach i användarens egen app. Svara alltid på svenska, i du-form, kort och konkret.",
+"Utgå ALLTID från siffrorna nedan. Räkna på dem, hänvisa till dem, och säg till om något saknas i underlaget.",
+"Regler:",
+"- Rekommendera aldrig enskilda värdepapper, fonder, aktier eller kryptovalutor vid namn. Prata om tillgångsslag och byggstenar.",
+"- Motivera alltid varför. Ett förslag utan skäl är värdelöst.",
+"- När du föreslår något: ta med risknivå, tidshorisont, fördelar, nackdelar och hur stor andel av sparandet det bör vara.",
+"- Bufferten går före börsen. Är bufferten under målet ska det synas i svaret.",
+"- Var ärlig med osäkerhet. Avkastning är antaganden, inte löften.",
+"- Säg emot användaren när siffrorna talar emot planen. Var vänlig men rak.",
+"- Håll svaret under 250 ord om inte användaren ber om mer. Använd korta stycken eller punktlistor.",
+"- Du ger inte finansiell rådgivning och känner inte till aktuella kurser, räntor eller marknadsläge."
+].join("\n");
+
+function mdlite(t){
+  return esc(t)
+    .replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")
+    .replace(/^[-•]\s(.+)$/gm,"• $1")
+    .replace(/\n{2,}/g,"</p><p>").replace(/\n/g,"<br>");
+}
+
+function chatCard(){
+  var key=getKey();
+  var h='<div class="card"><h2>Fråga fritt</h2>';
+  if(!key||showKey){
+    h+='<p class="hint" style="margin:0 0 12px">Klistra in din API-nyckel från console.anthropic.com. Den sparas bara i den här telefonen, hamnar aldrig i koden på GitHub och följer inte med i din säkerhetskopia.</p>'+
+      '<div class="field"><input type="password" id="akey" placeholder="sk-ant-..." autocomplete="off" value="'+esc(key)+'"></div>'+
+      '<div class="field"><label>Modell</label><select id="amodel">'+
+      MODELS.map(function(m){return '<option value="'+m[0]+'"'+(db.settings.aiModel===m[0]?" selected":"")+'>'+m[1]+'</option>';}).join("")+
+      '</select></div><button class="btn" id="akeySave">Spara nyckel</button>'+
+      (key?'<button class="btn ghost sm" id="akeyDel" style="margin-top:8px">Ta bort nyckeln</button>':'')+
+      '</div>';
+    return h;
+  }
+  h+='<div class="chat">';
+  if(!chat.length) h+='<p class="hint" style="margin:0 0 12px">Coachen ser hela din ekonomi: inkomst, utgifter per kategori, buffert, mål, portfölj och profil. Fråga vad du vill.</p>';
+  chat.forEach(function(m){
+    h+='<div class="msg '+m.role+'"><p>'+mdlite(m.content)+'</p></div>';
+  });
+  if(aiBusy) h+='<div class="msg assistant thinking"><p>Räknar på dina siffror…</p></div>';
+  if(aiErr) h+='<div class="msg err"><p>'+esc(aiErr)+'</p></div>';
+  h+='</div>';
+  h+='<div class="field" style="margin-top:12px"><textarea id="ain" rows="2" placeholder="Vad tycker du att jag ska göra med överskottet?"></textarea></div>'+
+    '<button class="btn" id="asend"'+(aiBusy?" disabled":"")+'>Skicka</button>'+
+    '<div style="display:flex;gap:8px;margin-top:8px">'+
+    '<button class="btn ghost sm" id="aclear">Rensa samtal</button>'+
+    '<button class="btn ghost sm" id="akeyEdit">Nyckel</button></div>';
+  return h+'</div>';
+}
+
+function askAI(text){
+  if(!text.trim()||aiBusy) return;
+  aiErr=null; chat.push({role:"user",content:text.trim()}); aiBusy=true; saveChat(); render();
+  var msgs=chat.slice(-12).map(function(m){return {role:m.role,content:m.content};});
+  fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{"content-type":"application/json","x-api-key":getKey(),
+      "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    body:JSON.stringify({model:db.settings.aiModel||"claude-sonnet-5",max_tokens:1200,
+      system:AISYS+"\n\nANVÄNDARENS EKONOMI JUST NU:\n"+aiContext(),messages:msgs})
+  }).then(function(r){ return r.json().then(function(j){ return {ok:r.ok,status:r.status,j:j}; }); })
+  .then(function(res){
+    aiBusy=false;
+    if(!res.ok){
+      var m=res.j&&res.j.error?res.j.error.message:"Okänt fel";
+      aiErr=res.status===401?"Nyckeln godtogs inte. Kontrollera att den är rätt kopierad.":
+            res.status===429?"För många anrop just nu. Vänta en stund.":
+            res.status===400&&/credit|balance/i.test(m)?"Kontot saknar saldo. Fyll på i Anthropic Console.":
+            "Fel "+res.status+": "+m;
+      render(); return;
+    }
+    var txt=(res.j.content||[]).filter(function(b){return b.type==="text";}).map(function(b){return b.text;}).join("\n").trim();
+    chat.push({role:"assistant",content:txt||"(tomt svar)"}); saveChat(); render();
+    setTimeout(function(){
+      var ms=document.querySelectorAll(".msg"); if(ms.length) ms[ms.length-1].scrollIntoView({block:"center",behavior:"smooth"});
+    },60);
+  })
+  .catch(function(){
+    aiBusy=false;
+    aiErr="Kunde inte nå API:et. Kontrollera internet – om felet återkommer behöver vi en liten mellanserver.";
+    render();
+  });
+}
+
 /* ---------- händelser ---------- */
 function on(sel,ev,fn){ var e=document.getElementById(sel); if(e) e.addEventListener(ev,fn); }
 
@@ -861,6 +998,24 @@ function wire(){
       save(); render();
     };
   });
+  // ai
+  on("akeySave","click",function(){
+    var k=document.getElementById("akey").value.trim();
+    db.settings.aiModel=document.getElementById("amodel").value; save();
+    try{
+      if(k) localStorage.setItem(AIKEY,k); else localStorage.removeItem(AIKEY);
+    }catch(e){}
+    showKey=false; render(); toast(k?"Nyckeln sparad":"Nyckeln borttagen");
+  });
+  on("akeyDel","click",function(){
+    try{ localStorage.removeItem(AIKEY); }catch(e){}
+    showKey=false; render(); toast("Nyckeln borttagen");
+  });
+  on("akeyEdit","click",function(){ showKey=true; render(); });
+  on("asend","click",function(){
+    var t=document.getElementById("ain"); if(t){ askAI(t.value); }
+  });
+  on("aclear","click",function(){ chat=[]; aiErr=null; saveChat(); render(); });
   // coach
   document.querySelectorAll("[data-prof]").forEach(function(b){
     b.onclick=function(){ db.settings.riskProfile=b.getAttribute("data-prof"); save(); render(); };
