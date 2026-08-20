@@ -130,6 +130,35 @@ nav button[aria-current=page]{color:var(--petrol)}
   z-index:50;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center
 }
 #toast.on{opacity:1}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip.on{background:var(--petrol);border-color:var(--petrol);color:#fff}
+.chip.q{font-weight:500;text-align:left}
+details.blk{border-bottom:1px solid var(--line)}
+details.blk:last-of-type{border-bottom:0}
+details.blk summary{display:flex;align-items:center;gap:10px;padding:13px 0;cursor:pointer;list-style:none}
+details.blk summary::-webkit-details-marker{display:none}
+details.blk summary .lbl{flex:1;min-width:0;font-weight:500}
+details.blk summary .lbl small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+details.blk[open] summary .lbl{color:var(--petrol)}
+.blkbody{padding:2px 0 16px;font-size:14.5px;color:var(--ink)}
+.blkbody p{margin:0 0 10px}
+.blkbody b{font-weight:600}
+.blkbody .plus b{color:var(--good)} .blkbody .minus b{color:var(--bad)}
+ul.kv{list-style:none;margin:10px 0;padding:0}
+ul.kv li{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+ul.kv li:last-child{border-bottom:0}
+ul.kv li span{color:var(--muted)}
+ul.status{list-style:none;margin:0;padding:0}
+ul.status li{display:flex;gap:11px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+ul.status li:last-child{border-bottom:0}
+ul.status .pip{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:none}
+ul.status .ok .pip,ul.status li.ok .pip{background:var(--good)}
+ul.status li.mid .pip{background:var(--sand)}
+ul.status li.bad .pip{background:var(--bad)}
+ul.status .who b{display:block;font-weight:600;font-size:15px}
+ul.status .who small{color:var(--muted);font-size:13px}
+.answer{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:14.5px}
+.answer p{margin:0 0 10px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -154,6 +183,7 @@ nav button[aria-current=page]{color:var(--petrol)}
   <button data-tab="fasta"><span class="ic">≡</span>Fasta</button>
   <button data-tab="spara"><span class="ic">◆</span>Sparande</button>
   <button data-tab="invest"><span class="ic">▲</span>Invest</button>
+  <button data-tab="coach"><span class="ic">✦</span>Coach</button>
 </nav>
 
 <div id="toast"></div>
@@ -176,7 +206,7 @@ var KEYWORDS={
 var INVTYPES=["Aktier","Fonder","ETF","Räntor","Krypto","Övrigt"];
 
 var DEFAULT={income:[],fixed:[],expenses:[],investments:[],
-  settings:{monthlyGoal:0,totalGoal:0,startSavings:0}};
+  settings:{monthlyGoal:0,totalGoal:0,startSavings:0,riskProfile:"Balanserad",horizonYears:10,cashOverride:0}};
 
 function load(){
   try{
@@ -280,13 +310,13 @@ function parseExpense(text){
 
 /* ---------- vyer ---------- */
 var tab="hem";
-var TABNAMES={hem:"Översikt",utgifter:"Rörliga utgifter",fasta:"Inkomst & fasta",spara:"Sparande",invest:"Investeringar"};
+var TABNAMES={hem:"Översikt",utgifter:"Rörliga utgifter",fasta:"Inkomst & fasta",spara:"Sparande",invest:"Investeringar",coach:"AI-coach"};
 
 function render(){
   document.getElementById("monthLabel").textContent=monthName(view);
   document.getElementById("tabName").textContent=TABNAMES[tab];
   var el=document.getElementById("view");
-  el.innerHTML=({hem:viewHem,utgifter:viewUtgifter,fasta:viewFasta,spara:viewSpara,invest:viewInvest})[tab]();
+  el.innerHTML=({hem:viewHem,utgifter:viewUtgifter,fasta:viewFasta,spara:viewSpara,invest:viewInvest,coach:viewCoach})[tab]();
   wire();
   window.scrollTo(0,0);
 }
@@ -524,6 +554,237 @@ function viewInvest(){
   return h;
 }
 
+/* ---------- AI-coach: modell ---------- */
+var PROFILES={
+ "Försiktig":{buf:6,ret:3.5,w:{index:45,ranta:45,tillvaxt:10,hog:0},
+   txt:"Du prioriterar trygghet. Målet är att pengarna ska finnas kvar, även om det kostar avkastning."},
+ "Balanserad":{buf:4,ret:5,w:{index:65,ranta:20,tillvaxt:15,hog:0},
+   txt:"Du tar risk där den betalar sig men håller en stötdämpare, så att en börsnedgång inte tvingar fram beslut."},
+ "Tillväxt":{buf:3,ret:6.5,w:{index:65,ranta:5,tillvaxt:25,hog:5},
+   txt:"Du siktar på tillväxt över lång tid och accepterar att värdet kan falla kraftigt under enskilda år."},
+ "Hög risk":{buf:3,ret:8,w:{index:50,ranta:0,tillvaxt:35,hog:15},
+   txt:"Du vill maximera möjlig avkastning och klarar av stora tapp utan att sälja."}
+};
+var BLOCKS={
+ buffert:{n:"Extra buffert på sparkonto",risk:"Ingen risk (insättningsgaranti)",hor:"Alltid tillgängligt",
+  vad:"Pengar på ett sparkonto med insättningsgaranti som du kan ta ut samma dag.",
+  plus:["Du slipper sälja investeringar vid oväntade utgifter","Ingen risk att beloppet minskar","Gör det lättare att våga ta risk med resten"],
+  minus:["Räntan är oftast lägre än inflationen över tid","Pengarna växer långsamt"]},
+ index:{n:"Bred global indexfond",risk:"Medel",hor:"5 år eller längre",
+  vad:"En fond som följer världsindex och därmed äger tusentals bolag i många länder och branscher.",
+  plus:["Bred spridning – ett enskilt bolag kan inte sänka sparandet","Låga avgifter jämfört med aktivt förvaltade fonder","Kräver inget underhåll från dig"],
+  minus:["Följer börsen ner i nedgångar, historiskt 30–50 % i djupa kriser","Ger per definition aldrig mer än marknaden","Tar tid att återhämta sig – därför minst 5 år"]},
+ ranta:{n:"Räntefond eller sparkonto",risk:"Låg",hor:"0–3 år",
+  vad:"Korta räntefonder eller sparkonto – den stabila delen av sparandet.",
+  plus:["Dämpar svängningarna i hela portföljen","Blir pengar du kan flytta till börsen när den fallit","Låg risk för stora tapp"],
+  minus:["Låg förväntad avkastning","Köpkraften kan minska när inflationen är hög"]},
+ tillvaxt:{n:"Småbolag eller tillväxtmarknader",risk:"Hög",hor:"7–10 år",
+  vad:"Fonder inriktade på mindre bolag eller marknader utanför USA/Europa, som komplement till indexfonden.",
+  plus:["Historiskt högre förväntad avkastning över långa perioder","Sprider risken bort från de största bolagen"],
+  minus:["Svänger mer än världsindex","Kan gå dåligt i många år i rad","Frestande att sälja vid fel tillfälle"]},
+ hog:{n:"Enskilda aktier eller nischade innehav",risk:"Mycket hög",hor:"10 år eller pengar du klarar att förlora",
+  vad:"Den lilla delen där du får experimentera – enskilda bolag, teman eller liknande.",
+  plus:["Du lär dig hur marknaden fungerar på riktigt","Chans till hög avkastning på en liten summa"],
+  minus:["Ett enskilt innehav kan tappa hela sitt värde","Kräver tid, kunskap och tålamod","Lätt att fatta känslostyrda beslut"]}
+};
+var RISKOFTYPE={"Räntor":"lag","Fonder":"medel","ETF":"medel","Aktier":"hog","Krypto":"hog","Övrigt":"medel"};
+var coachQ=null, projAmt=null;
+
+function cfg(){ return PROFILES[db.settings.riskProfile]||PROFILES["Balanserad"]; }
+function allContribs(){
+  var s=0; db.investments.forEach(function(i){ (i.contribs||[]).forEach(function(c){ s+=c.amount; }); });
+  return s;
+}
+function coachData(){
+  var inc=sumIncome(), fix=sumFixed(), vr=sumVar(view), sav=inc-fix-vr;
+  var ms=activeMonths().slice(-3);
+  var avgVar=ms.length?ms.reduce(function(a,m){return a+sumVar(m);},0)/ms.length:vr;
+  var mCost=fix+avgVar;
+  var cash=db.settings.cashOverride>0?db.settings.cashOverride:Math.max(0,totalSaved()-allContribs());
+  var p=cfg(), target=p.buf*mCost;
+  return {inc:inc,fix:fix,vr:vr,sav:sav,invM:investedIn(view),over:Math.max(0,sav-investedIn(view)),
+    mCost:mCost,cash:cash,target:target,p:p,inv:invTotals()};
+}
+function allocate(d){
+  var over=d.over, toBuf=0;
+  if(d.cash<d.target){
+    var missing=d.target-d.cash;
+    toBuf=Math.min(over, d.cash<d.target*0.5?missing:Math.min(over*0.5,missing));
+  }
+  var inv=over-toBuf, rows=[];
+  if(toBuf>0) rows.push({k:"buffert",amt:toBuf,
+    why:"Din buffert täcker "+(d.mCost>0?(d.cash/d.mCost).toFixed(1):"0")+" månaders utgifter av "+d.p.buf+" som din profil bygger på. Bufferten går före investeringar – utan den blir börsen din nödkassa."});
+  var w=d.p.w, keys=["index","ranta","tillvaxt","hog"], sum=0;
+  keys.forEach(function(k){
+    if(!w[k]||inv<=0) return;
+    var a=Math.round(inv*w[k]/100/50)*50; sum+=a;
+    if(a>0) rows.push({k:k,amt:a,why:null});
+  });
+  var diff=Math.round(inv)-sum;
+  if(diff!==0){ var r=rows.find(function(x){return x.k==="index";})||rows[rows.length-1]; if(r) r.amt+=diff; }
+  return rows.filter(function(r){return r.amt>0;});
+}
+function riskMix(){
+  var t={lag:0,medel:0,hog:0}, tot=0;
+  db.investments.forEach(function(i){ var b=RISKOFTYPE[i.type]||"medel"; t[b]+=i.value; tot+=i.value; });
+  return {t:t,tot:tot};
+}
+function fv(start,monthly,years,rate){
+  var r=rate/100/12, n=years*12;
+  return start*Math.pow(1+r,n)+(r>0?monthly*((Math.pow(1+r,n)-1)/r):monthly*n);
+}
+
+/* ---------- AI-coach: vy ---------- */
+function viewCoach(){
+  var d=coachData(), rows=allocate(d), p=d.p;
+  var h='<div class="card"><h2>Min profil</h2><div class="chips">';
+  Object.keys(PROFILES).forEach(function(k){
+    h+='<button class="chip'+(db.settings.riskProfile===k?" on":"")+'" data-prof="'+k+'">'+k+'</button>';
+  });
+  h+='</div><p class="hint">'+p.txt+'</p>'+
+    '<div class="two" style="margin-top:10px">'+
+    '<div><label>Tidshorisont (år)</label><input type="number" inputmode="numeric" id="hz" value="'+(db.settings.horizonYears||"")+'" placeholder="10"></div>'+
+    '<div><label>Buffert på konto</label><input type="number" inputmode="numeric" id="cashO" value="'+(db.settings.cashOverride||"")+'" placeholder="'+Math.round(d.cash)+'"></div></div>'+
+    '<button class="btn ghost sm" id="saveProf" style="margin-top:8px">Spara profil</button></div>';
+
+  h+='<div class="card"><h2>Denna månad</h2>';
+  if(d.over<=0){
+    h+='<p style="margin:0">Det finns inget överskott att fördela den här månaden. Antingen är inkomst och utgifter inte inlagda än, eller så är allt redan investerat.</p>';
+  }else{
+    h+='<div class="eyebrow">Att fördela</div><div class="amount num serif" style="font-size:34px;margin:2px 0 14px">'+kr(d.over)+'</div>';
+    rows.forEach(function(r){
+      var b=BLOCKS[r.k], share=Math.round(r.amt/d.over*100);
+      h+='<details class="blk"><summary><span class="dot" style="background:'+(r.k==="buffert"?"var(--slate)":r.k==="ranta"?"var(--lake)":r.k==="index"?"var(--petrol)":r.k==="tillvaxt"?"var(--sand)":"var(--clay)")+'"></span>'+
+        '<span class="lbl">'+b.n+'<small>'+share+' % av överskottet</small></span>'+
+        '<span class="num" style="font-weight:600">'+kr(r.amt)+'</span></summary>'+
+        '<div class="blkbody"><p><b>Vad det är.</b> '+b.vad+'</p>'+
+        '<p><b>Varför just nu.</b> '+(r.why||whyBlock(r.k,d))+'</p>'+
+        '<ul class="kv"><li><span>Risknivå</span><b>'+b.risk+'</b></li>'+
+        '<li><span>Tidshorisont</span><b>'+b.hor+'</b></li>'+
+        '<li><span>Andel av månadens överskott</span><b>'+share+' %</b></li></ul>'+
+        '<p class="plus"><b>Fördelar</b><br>'+b.plus.join("<br>")+'</p>'+
+        '<p class="minus"><b>Nackdelar</b><br>'+b.minus.join("<br>")+'</p></div></details>';
+    });
+  }
+  h+='</div>';
+
+  // analys
+  h+='<div class="card"><h2>Analys</h2>'+analysis(d)+'</div>';
+
+  // frågor
+  var QS=["Vad ska jag investera i denna månad?","Har jag för mycket i en investering?",
+    "Hur ser min riskspridning ut?","Vad krävs för att nå sparmålet snabbare?","Hur utvecklas det på 5 år?"];
+  h+='<div class="card"><h2>Fråga coachen</h2><div class="chips">';
+  QS.forEach(function(q,i){ h+='<button class="chip q'+(coachQ===i?" on":"")+'" data-q="'+i+'">'+q+'</button>'; });
+  h+='</div>';
+  if(coachQ!==null) h+='<div class="answer">'+answerQ(coachQ,d,rows)+'</div>';
+  h+='</div>';
+
+  h+='<p class="hint" style="text-align:center;padding:0 8px 8px">Coachen räknar på dina egna siffror och allmänna principer för sparande. Den är inte finansiell rådgivning och rekommenderar inga enskilda värdepapper.</p>';
+  return h;
+}
+function whyBlock(k,d){
+  var p=d.p;
+  if(k==="index") return "Basen i sparandet. Med "+(db.settings.horizonYears||10)+" års horisont hinner breda börssvängningar jämna ut sig, och du behöver inte välja rätt bolag för att det ska fungera.";
+  if(k==="ranta") return "Profilen "+db.settings.riskProfile+" bygger på att en del av kapitalet står stilla. Den delen är din stötdämpare när börsen faller.";
+  if(k==="tillvaxt") return "Ett tillägg ovanpå indexfonden för att öka den förväntade avkastningen. Andelen hålls medvetet liten eftersom den svänger mer.";
+  if(k==="hog") return "Din profil ger utrymme för en liten experimentdel. Den är avsiktligt begränsad så att ett misstag inte påverkar helheten.";
+  return "";
+}
+function analysis(d){
+  var out=[], inv=d.inv, mix=riskMix();
+  // buffert
+  var mnd=d.mCost>0?d.cash/d.mCost:0;
+  out.push(row(mnd>=d.p.buf?"ok":mnd>=d.p.buf/2?"mid":"bad","Buffert",
+    kr(d.cash)+" ≈ "+mnd.toFixed(1)+" månaders utgifter (mål "+d.p.buf+")"));
+  // spargrad
+  var sr=d.inc>0?d.sav/d.inc*100:0;
+  out.push(row(sr>=20?"ok":sr>=10?"mid":"bad","Spargrad",pct(sr)+" av inkomsten denna månad"));
+  // koncentration
+  if(inv.value>0){
+    var worst=null;
+    db.investments.forEach(function(i){ var s=i.value/inv.value*100; if(!worst||s>worst.s) worst={n:i.name,s:s}; });
+    out.push(row(worst.s>40?"bad":worst.s>25?"mid":"ok","Största innehav",
+      esc(worst.n)+" är "+pct(worst.s)+" av portföljen"));
+    var hogAndel=mix.tot>0?mix.t.hog/mix.tot*100:0;
+    var mal=d.p.w.tillvaxt+d.p.w.hog;
+    out.push(row(hogAndel>mal+20?"bad":hogAndel>mal+10?"mid":"ok","Högriskandel",
+      pct(hogAndel)+" i aktier/krypto mot ca "+mal+" % som profilen bygger på"));
+  }else{
+    out.push(row("mid","Portfölj","Inga innehav inlagda än – lägg in dem under fliken Invest"));
+  }
+  // mål
+  if(db.settings.monthlyGoal>0){
+    var diff=d.sav-db.settings.monthlyGoal;
+    out.push(row(diff>=0?"ok":"mid","Sparmål",
+      diff>=0?"Du ligger "+kr(diff)+" över målet":"Det fattas "+kr(-diff)+" till månadsmålet"));
+  }
+  return '<ul class="status">'+out.join("")+'</ul>';
+}
+function row(s,k,v){
+  return '<li class="'+s+'"><span class="pip"></span><span class="who"><b>'+k+'</b><small>'+v+'</small></span></li>';
+}
+function answerQ(i,d,rows){
+  var p=d.p, inv=d.inv;
+  if(i===0){
+    if(d.over<=0) return "<p>Du har inget överskott registrerat den här månaden, så det finns inget att fördela. Lägg in inkomst och utgifter först – eller vänta tills månaden har fler poster.</p>";
+    return "<p>Förslaget står överst på sidan: "+rows.map(function(r){return kr(r.amt)+" till "+BLOCKS[r.k].n.toLowerCase();}).join(", ")+
+      ". Ordningen är medveten – bufferten först, sedan bredden, sist det som svänger mest. Tryck på varje rad för att se varför.</p>";
+  }
+  if(i===1){
+    if(inv.value<=0) return "<p>Du har inga innehav inlagda, så det går inte att bedöma än.</p>";
+    var list=db.investments.map(function(x){return {n:x.name,s:x.value/inv.value*100};}).sort(function(a,b){return b.s-a.s;});
+    var t=list[0];
+    return "<p>"+(t.s>40
+      ? "Ja – "+esc(t.n)+" står för "+pct(t.s)+" av portföljen. Över ungefär 40 % i ett innehav betyder att din utveckling i praktiken avgörs av den enda posten. Ett vanligt sätt att rätta till det utan att sälja är att lägga nya insättningar i de övriga delarna tills andelen sjunker."
+      : t.s>25
+      ? esc(t.n)+" är "+pct(t.s)+" av portföljen. Det är högt men inte extremt. Håll ett öga på det och styr nya köp åt andra håll."
+      : "Nej. Största innehavet är "+esc(t.n)+" med "+pct(t.s)+", vilket är en rimlig nivå.")+"</p>"+
+      "<ul class='kv'>"+list.slice(0,6).map(function(x){return "<li><span>"+esc(x.n)+"</span><b>"+pct(x.s)+"</b></li>";}).join("")+"</ul>";
+  }
+  if(i===2){
+    var m=riskMix();
+    if(m.tot<=0) return "<p>Lägg in dina innehav under fliken Invest så räknar jag ut spridningen.</p>";
+    var l=m.t.lag/m.tot*100,me=m.t.medel/m.tot*100,hg=m.t.hog/m.tot*100;
+    return "<p>Så här ligger portföljen fördelad på risknivå, baserat på vilken typ du valt för varje innehav:</p>"+
+      "<ul class='kv'><li><span>Låg risk (räntor)</span><b>"+pct(l)+"</b></li>"+
+      "<li><span>Medel (fonder, ETF)</span><b>"+pct(me)+"</b></li>"+
+      "<li><span>Hög (aktier, krypto)</span><b>"+pct(hg)+"</b></li></ul>"+
+      "<p>Profilen "+db.settings.riskProfile+" bygger på ungefär "+(p.w.tillvaxt+p.w.hog)+" % i den högre änden. "+
+      (hg>p.w.tillvaxt+p.w.hog+10?"Du ligger över det – nya pengar kan gå till den breda delen tills det jämnar ut sig.":
+       hg<Math.max(0,p.w.tillvaxt+p.w.hog-15)?"Du ligger under det – det är inget fel, men du tar mindre risk än profilen antyder.":
+       "Du ligger nära den nivån.")+"</p>";
+  }
+  if(i===3){
+    var g=db.settings.monthlyGoal, need=g-d.sav;
+    var byCat={}; expOf(view).forEach(function(e){ byCat[e.cat]=(byCat[e.cat]||0)+e.amount; });
+    var top=Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a];}).slice(0,3);
+    var s="<p>";
+    if(g<=0) s+="Sätt först ett månadsmål under fliken Sparande.";
+    else if(need<=0) s+="Du klarar redan målet med "+kr(-need)+" marginal. Vill du snabba upp det ytterligare är höjt månadsmål det enklaste greppet.";
+    else s+="Det fattas "+kr(need)+" per månad. Tre vägar dit: sänk en rörlig kategori, kapa en fast kostnad, eller öka inkomsten.";
+    s+="</p>";
+    if(top.length) s+="<p>Dina största rörliga poster denna månad:</p><ul class='kv'>"+
+      top.map(function(c){return "<li><span>"+c+"</span><b>"+kr(byCat[c])+"</b></li>";}).join("")+"</ul>"+
+      "<p class='hint'>En sänkning på 20 % av "+top[0]+" ger "+kr(byCat[top[0]]*0.2)+" i månaden.</p>";
+    if(sumFixed()>0) s+="<p>Dina fasta utgifter är "+kr(sumFixed())+" per månad. De ger oftast mest per nedlagd timme att förhandla om, eftersom effekten kommer varje månad utan att du behöver tänka på den igen.</p>";
+    return s;
+  }
+  if(i===4){
+    var m=projAmt!==null?projAmt:Math.round((d.over||0)/100)*100;
+    var start=inv.value, r=p.ret;
+    var s='<div class="field"><label>Investerar per månad</label><input type="number" inputmode="numeric" id="projIn" value="'+m+'"></div>'+
+      '<button class="btn ghost sm" id="projGo" style="margin-bottom:12px">Räkna om</button>';
+    s+="<p>Utgår från "+kr(start)+" idag och "+kr(m)+" i månaden. Avkastningen är ett antagande, inte ett löfte – tre scenarier:</p><ul class='kv'>";
+    [[Math.max(0,r-3),"Svag utveckling"],[r,"Förväntat ("+r+" %)"],[r+3,"Stark utveckling"]].forEach(function(x){
+      s+="<li><span>"+x[1]+"</span><b>"+kr(fv(start,m,5,x[0]))+"</b></li>";
+    });
+    s+="</ul><p class='hint'>Insatt kapital under perioden: "+kr(start+m*60)+". Skillnaden mot beloppen ovan är ränta-på-ränta – och den skillnaden växer kraftigt efter år 10.</p>";
+    return s;
+  }
+  return "";
+}
+
 /* ---------- händelser ---------- */
 function on(sel,ev,fn){ var e=document.getElementById(sel); if(e) e.addEventListener(ev,fn); }
 
@@ -600,6 +861,25 @@ function wire(){
       save(); render();
     };
   });
+  // coach
+  document.querySelectorAll("[data-prof]").forEach(function(b){
+    b.onclick=function(){ db.settings.riskProfile=b.getAttribute("data-prof"); save(); render(); };
+  });
+  on("saveProf","click",function(){
+    db.settings.horizonYears=num(document.getElementById("hz").value)||10;
+    db.settings.cashOverride=num(document.getElementById("cashO").value);
+    save(); render(); toast("Profilen sparad");
+  });
+  document.querySelectorAll("[data-q]").forEach(function(b){
+    b.onclick=function(){
+      var i=+b.getAttribute("data-q");
+      coachQ=(coachQ===i)?null:i; render();
+      if(coachQ!==null) setTimeout(function(){
+        var a=document.querySelector(".answer"); if(a) a.scrollIntoView({block:"center",behavior:"smooth"});
+      },40);
+    };
+  });
+  on("projGo","click",function(){ projAmt=num(document.getElementById("projIn").value); render(); });
   // backup
   on("exp","click",function(){
     var data=JSON.stringify(db,null,2);
