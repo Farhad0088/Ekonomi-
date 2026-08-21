@@ -168,6 +168,8 @@ textarea{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius
 .msg.assistant{align-self:flex-start;background:var(--paper);border:1px solid var(--line);border-bottom-left-radius:5px}
 .msg.thinking{color:var(--muted);font-style:italic}
 .msg.err{align-self:stretch;background:transparent;border:1px solid var(--bad);color:var(--bad)}
+.sync{font-size:13px;color:var(--muted);font-weight:600}
+.sync.ok{color:var(--good)} .sync.bad{color:var(--bad)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -214,8 +216,8 @@ var KEYWORDS={
 };
 var INVTYPES=["Aktier","Fonder","ETF","Räntor","Krypto","Övrigt"];
 
-var DEFAULT={income:[],fixed:[],expenses:[],investments:[],
-  settings:{monthlyGoal:0,totalGoal:0,startSavings:0,riskProfile:"Balanserad",horizonYears:10,cashOverride:0,aiModel:"claude-sonnet-5"}};
+var DEFAULT={income:[],fixed:[],expenses:[],investments:[],settingsAt:0,
+  settings:{monthlyGoal:0,totalGoal:0,startSavings:0,riskProfile:"Balanserad",horizonYears:10,cashOverride:0,targetDate:"",aiModel:"claude-sonnet-5"}};
 
 function load(){
   try{
@@ -229,8 +231,10 @@ function load(){
 }
 var db=load();
 function save(){
+  if(typeof stampChanges==="function") stampChanges();
   try{ localStorage.setItem(KEY,JSON.stringify(db)); }
   catch(e){ toast("Kunde inte spara. Frigör utrymme i Safari."); }
+  if(typeof scheduleSync==="function") scheduleSync();
 }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 
@@ -257,20 +261,20 @@ function num(v){ var n=parseFloat(String(v).replace(/\s/g,"").replace(",","."));
 
 /* ---------- beräkningar ---------- */
 var view=mKey(todayISO());
-function sumIncome(){ return db.income.reduce(function(a,b){return a+b.amount;},0); }
-function sumFixed(){ return db.fixed.reduce(function(a,b){return a+b.amount;},0); }
-function expOf(m){ return db.expenses.filter(function(e){return mKey(e.date)===m;}); }
+function sumIncome(){ return L("income").reduce(function(a,b){return a+b.amount;},0); }
+function sumFixed(){ return L("fixed").reduce(function(a,b){return a+b.amount;},0); }
+function expOf(m){ return L("expenses").filter(function(e){return mKey(e.date)===m;}); }
 function sumVar(m){ return expOf(m).reduce(function(a,b){return a+b.amount;},0); }
 function savedOf(m){ return sumIncome()-sumFixed()-sumVar(m); }
 function investedIn(m){
   var s=0;
-  db.investments.forEach(function(i){
+  L("investments").forEach(function(i){
     (i.contribs||[]).forEach(function(c){ if(mKey(c.date)===m) s+=c.amount; });
   });
   return s;
 }
 function activeMonths(){
-  var set={}; db.expenses.forEach(function(e){ set[mKey(e.date)]=1; });
+  var set={}; L("expenses").forEach(function(e){ set[mKey(e.date)]=1; });
   var arr=Object.keys(set); arr.sort(); return arr;
 }
 function totalSaved(){
@@ -283,7 +287,7 @@ function avgSaved(){
 }
 function invTotals(){
   var inv=0,val=0;
-  db.investments.forEach(function(i){ inv+=i.invested; val+=i.value; });
+  L("investments").forEach(function(i){ inv+=i.invested; val+=i.value; });
   return {invested:inv,value:val,pl:val-inv,ret:inv>0?((val-inv)/inv*100):0};
 }
 
@@ -334,6 +338,7 @@ function viewHem(){
   var inc=sumIncome(), fix=sumFixed(), vr=sumVar(view), sav=inc-fix-vr;
   var rate=inc>0?(sav/inc*100):0;
   var invM=investedIn(view), it=invTotals();
+  var kvar=inc-fix-vr-(db.settings.monthlyGoal||0);
   var base=Math.max(inc, fix+vr+Math.max(sav,0), 1);
   var h="";
 
@@ -363,6 +368,8 @@ function viewHem(){
     stat("Utgifter",kr(fix+vr))+
     stat("Spargrad",pct(rate),rate>=0?"pos":"neg")+
     stat("Investerat i mån.",kr(invM))+
+    stat("Kvar att använda",kr(kvar),kvar>=0?"":"neg")+
+    stat("Sparat totalt",kr(totalSaved()))+
     '</div>';
 
   // kategorier
@@ -449,7 +456,7 @@ function viewUtgifter(){
         '<span class="who"><b>'+esc(e.name)+'</b>'+
         '<select class="catsel" data-cat="'+e.id+'">'+CATS.map(function(c){
           return '<option'+(c===e.cat?" selected":"")+'>'+c+'</option>';}).join("")+'</select>'+
-        ' <small>· '+e.date.slice(8)+"/"+(+e.date.slice(5,7))+'</small></span>'+
+        ' <small>· '+e.date.slice(8)+"/"+(+e.date.slice(5,7))+(e.by?" · "+esc(e.by):"")+'</small></span>'+
         '<span class="kr num">'+kr(e.amount)+'</span>'+
         '<button class="x" data-del="'+e.id+'" aria-label="Ta bort">×</button></li>';
     });
@@ -459,14 +466,15 @@ function viewUtgifter(){
 }
 
 function viewFasta(){
-  var h='<div class="card"><h2>Inkomst per månad</h2>'+rows(db.income,"income")+
+  var h=viewHushall();
+  h+='<div class="card"><h2>Inkomst per månad</h2>'+rows(L("income"),"income")+
     '<div class="two" style="margin-top:10px">'+
     '<input type="text" id="inName" placeholder="Lön" autocomplete="off">'+
     '<input type="number" id="inAmt" placeholder="30000" inputmode="numeric"></div>'+
     '<button class="btn ghost sm" id="addIncome" style="margin-top:8px">Lägg till inkomst</button>'+
     '<p class="hint">Totalt: <b>'+kr(sumIncome())+'</b> per månad.</p></div>';
 
-  h+='<div class="card"><h2>Fasta utgifter</h2>'+rows(db.fixed,"fixed")+
+  h+='<div class="card"><h2>Fasta utgifter</h2>'+rows(L("fixed"),"fixed")+
     '<div class="two" style="margin-top:10px">'+
     '<input type="text" id="fxName" placeholder="Hyra" autocomplete="off">'+
     '<input type="number" id="fxAmt" placeholder="9000" inputmode="numeric"></div>'+
@@ -497,6 +505,7 @@ function viewSpara(){
   var h='<div class="card"><h2>Mina mål</h2>'+
     '<div class="field"><label>Sparmål per månad</label><input type="number" id="gM" inputmode="numeric" value="'+(s.monthlyGoal||"")+'" placeholder="10000"></div>'+
     '<div class="field"><label>Totalt sparmål</label><input type="number" id="gT" inputmode="numeric" value="'+(s.totalGoal||"")+'" placeholder="100000"></div>'+
+    '<div class="field"><label>Måldatum (valfritt)</label><input type="date" id="gD" value="'+(s.targetDate||"")+'"></div>'+
     '<div class="field"><label>Redan sparat sedan tidigare</label><input type="number" id="gS" inputmode="numeric" value="'+(s.startSavings||"")+'" placeholder="0"></div>'+
     '<button class="btn" id="saveGoals">Spara mål</button></div>';
 
@@ -510,7 +519,8 @@ function viewSpara(){
   h+='<div class="card"><h2>Mot totalmålet</h2>'+
     '<div style="display:flex;justify-content:space-between"><span class="num">'+kr(t)+'</span><span class="num" style="color:var(--muted)">'+kr(s.totalGoal)+'</span></div>'+
     '<div class="bar"><i style="width:'+pctTotal+'%"></i></div>'+
-    '<p class="hint">'+(s.totalGoal>0?pct(pctTotal)+" av målet. Återstår "+kr(Math.max(0,s.totalGoal-t))+".":"Sätt ett totalt sparmål ovan så visas utvecklingen här.")+'</p></div>';
+    '<p class="hint">'+(s.totalGoal>0?pct(pctTotal)+" av målet. Återstår "+kr(Math.max(0,s.totalGoal-t))+".":"Sätt ett totalt sparmål ovan så visas utvecklingen här.")+'</p>'+
+    behovPerMan(s,t)+'</div>';
 
   var ms=activeMonths().slice(-6);
   if(ms.length){
@@ -525,6 +535,22 @@ function viewSpara(){
   return h;
 }
 
+function behovPerMan(s,t){
+  if(!(s.totalGoal>0)||t>=s.totalGoal) return "";
+  var rest=s.totalGoal-t, av=avgSaved(), h="";
+  if(s.targetDate){
+    var d=new Date(s.targetDate), now=new Date();
+    var n=Math.max(1,(d.getFullYear()-now.getFullYear())*12+(d.getMonth()-now.getMonth()));
+    h+='<p class="hint">Till '+d.toLocaleDateString("sv-SE",{month:"long",year:"numeric"})+
+      ' ('+n+' mån) behöver ni spara <b>'+kr(rest/n)+'</b> per månad.</p>';
+  }
+  if(av>0){
+    var m=Math.ceil(rest/av), dd=new Date(); dd.setMonth(dd.getMonth()+m);
+    h+='<p class="hint">I nuvarande takt ('+kr(av)+'/mån) nås målet om '+m+' månader – '+
+      dd.toLocaleDateString("sv-SE",{month:"long",year:"numeric"})+'.</p>';
+  }
+  return h;
+}
 function viewInvest(){
   var it=invTotals();
   var h='<div class="card"><h2>Portfölj</h2><div class="grid">'+
@@ -533,8 +559,8 @@ function viewInvest(){
     stat("Avkastning",(it.ret>=0?"+":"")+pct(it.ret),it.ret>=0?"pos":"neg")+'</div></div>';
 
   h+='<div class="card"><h2>Innehav</h2>';
-  if(!db.investments.length) h+='<div class="empty">Lägg till ditt första innehav nedan.</div>';
-  db.investments.forEach(function(i){
+  if(!L("investments").length) h+='<div class="empty">Lägg till ditt första innehav nedan.</div>';
+  L("investments").forEach(function(i){
     var pl=i.value-i.invested, r=i.invested>0?pl/i.invested*100:0;
     var share=it.value>0?i.value/it.value*100:0;
     h+='<div style="padding:12px 0;border-bottom:1px solid var(--line)">'+
@@ -561,6 +587,149 @@ function viewInvest(){
     '<button class="btn" id="addInv" style="margin-top:10px">Lägg till innehav</button>'+
     '<p class="hint">Höjer du "Investerat" registreras skillnaden som en insättning den här månaden.</p></div>';
   return h;
+}
+
+/* ---------- hushåll & synk ---------- */
+var SYNCKEY="ekonomi.sync";
+var snap={}, syncState={t:0,err:null,busy:false}, syncTimer=null;
+function syncCfg(){ try{ return JSON.parse(localStorage.getItem(SYNCKEY)||"null"); }catch(e){ return null; } }
+function setSyncCfg(c){ try{ localStorage.setItem(SYNCKEY,JSON.stringify(c)); }catch(e){} }
+function meName(){ var c=syncCfg(); return (c&&c.me)?c.me:""; }
+function L(k){ return (db[k]||[]).filter(function(x){ return !x.del; }); }
+function itemKey(o){
+  var c={}; Object.keys(o).forEach(function(k){ if(k!=="at") c[k]=o[k]; });
+  return JSON.stringify(c);
+}
+function rebuildSnap(){
+  snap={};
+  ["income","fixed","expenses","investments"].forEach(function(k){
+    (db[k]||[]).forEach(function(i){ snap[k+":"+i.id]=itemKey(i); });
+  });
+  snap.__settings=JSON.stringify(db.settings);
+}
+function stampChanges(){
+  var now=Date.now(), me=meName(), changed=false;
+  ["income","fixed","expenses","investments"].forEach(function(k){
+    (db[k]||[]).forEach(function(i){
+      var s=itemKey(i), key=k+":"+i.id;
+      if(snap[key]!==s){
+        i.at=now; if(!i.by&&me) i.by=me;
+        snap[key]=itemKey(i); changed=true;
+      }
+    });
+  });
+  var ss=JSON.stringify(db.settings);
+  if(snap.__settings!==ss){ db.settingsAt=now; snap.__settings=ss; changed=true; }
+  return changed;
+}
+function killItem(list,id){
+  var i=(db[list]||[]).find(function(x){return x.id===id;});
+  if(i){ i.del=true; i.at=Date.now(); }
+}
+function mergeDoc(rem){
+  if(!rem||typeof rem!=="object") return false;
+  var changed=false;
+  ["income","fixed","expenses","investments"].forEach(function(k){
+    var map={};
+    (db[k]||[]).forEach(function(i){ map[i.id]=i; });
+    (rem[k]||[]).forEach(function(r){
+      var l=map[r.id];
+      if(!l){ map[r.id]=r; changed=true; }
+      else if((r.at||0)>(l.at||0)){ map[r.id]=r; changed=true; }
+    });
+    db[k]=Object.keys(map).map(function(id){ return map[id]; });
+  });
+  if((rem.settingsAt||0)>(db.settingsAt||0)&&rem.settings){
+    db.settings=rem.settings; db.settingsAt=rem.settingsAt; changed=true;
+  }
+  return changed;
+}
+function rpc(fn,body){
+  var c=syncCfg();
+  return fetch(c.url.replace(/\/+$/,"")+"/rest/v1/rpc/"+fn,{
+    method:"POST",
+    headers:{"content-type":"application/json","apikey":c.key,"authorization":"Bearer "+c.key},
+    body:JSON.stringify(body)
+  }).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error(r.status+": "+t.slice(0,120)); });
+    return r.json();
+  });
+}
+function payload(){
+  return {income:db.income,fixed:db.fixed,expenses:db.expenses,investments:db.investments,
+    settings:db.settings,settingsAt:db.settingsAt||0};
+}
+function syncNow(silent){
+  var c=syncCfg();
+  if(!c||!c.url||!c.key||!c.hid||syncState.busy) return;
+  syncState.busy=true; syncState.err=null; if(!silent) render();
+  rpc("hh_load",{p_hid:c.hid}).then(function(res){
+    var row=Array.isArray(res)?res[0]:res;
+    var rem=row&&row.data?row.data:null;
+    var pulled=mergeDoc(rem);
+    if(pulled){ rebuildSnap(); try{ localStorage.setItem(KEY,JSON.stringify(db)); }catch(e){} }
+    var mine=JSON.stringify(payload());
+    var same=rem&&JSON.stringify({income:rem.income||[],fixed:rem.fixed||[],expenses:rem.expenses||[],
+      investments:rem.investments||[],settings:rem.settings||{},settingsAt:rem.settingsAt||0})===mine;
+    if(same){ syncState.busy=false; syncState.t=Date.now(); render(); return; }
+    return rpc("hh_save",{p_hid:c.hid,p_data:payload()}).then(function(){
+      syncState.busy=false; syncState.t=Date.now(); render();
+    });
+  }).catch(function(e){
+    syncState.busy=false;
+    syncState.err=/Failed to fetch|NetworkError/.test(e.message)?"Ingen kontakt med servern":e.message;
+    render();
+  });
+}
+function scheduleSync(){
+  if(!syncCfg()) return;
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(function(){ syncNow(true); },1500);
+}
+function syncStatus(){
+  if(syncState.err) return '<span class="sync bad">Synk: '+esc(syncState.err)+'</span>';
+  if(syncState.busy) return '<span class="sync">Synkar…</span>';
+  if(syncState.t) return '<span class="sync ok">Synkad '+new Date(syncState.t).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"})+'</span>';
+  return '<span class="sync">Inte synkad än</span>';
+}
+function newHid(){
+  if(window.crypto&&crypto.randomUUID) return crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,function(c){
+    var r=Math.random()*16|0; return (c==="x"?r:(r&0x3|0x8)).toString(16);
+  });
+}
+function inviteLink(){
+  var c=syncCfg()||{};
+  var d=btoa(unescape(encodeURIComponent(JSON.stringify({url:c.url,key:c.key,hid:c.hid}))));
+  return location.origin+location.pathname+"?setup="+encodeURIComponent(d);
+}
+function readSetupParam(){
+  var m=location.search.match(/[?&]setup=([^&]+)/);
+  if(!m) return;
+  try{
+    var d=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
+    var c=syncCfg()||{};
+    if(d.url&&d.key&&d.hid){
+      c.url=d.url; c.key=d.key; c.hid=d.hid; setSyncCfg(c);
+      history.replaceState(null,"",location.pathname);
+    }
+  }catch(e){}
+}
+
+function viewHushall(){
+  var c=syncCfg()||{};
+  return '<div class="card"><h2>Hushåll</h2>'+
+    '<p class="hint" style="margin:0 0 12px">Två telefoner, en gemensam ekonomi. Uppgifterna nedan sparas bara i telefonen – aldrig i koden på GitHub.</p>'+
+    '<div class="field"><label>Ditt namn</label><input type="text" id="syMe" value="'+esc(c.me||"")+'" placeholder="Ditt förnamn" autocomplete="off"></div>'+
+    '<div class="field"><label>Projekt-URL</label><input type="text" id="syUrl" value="'+esc(c.url||"")+'" placeholder="https://xxxx.supabase.co" autocomplete="off" autocapitalize="none"></div>'+
+    '<div class="field"><label>Publik nyckel (anon)</label><input type="password" id="syKey" value="'+esc(c.key||"")+'" placeholder="eyJ..." autocomplete="off"></div>'+
+    '<div class="field"><label>Hushålls-ID</label><input type="text" id="syHid" value="'+esc(c.hid||"")+'" placeholder="tryck Skapa nytt" autocomplete="off" autocapitalize="none"></div>'+
+    '<div class="two"><button class="btn ghost sm" id="syNew">Skapa nytt ID</button>'+
+    '<button class="btn sm" id="sySave">Spara</button></div>'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px">'+
+      syncStatus()+'<button class="btn ghost sm" id="syNow" style="width:auto;padding:8px 14px">Synka nu</button></div>'+
+    (c.hid&&c.url?'<button class="btn ghost sm" id="syInvite" style="margin-top:10px">Kopiera inbjudan till andra telefonen</button>':'')+
+    '</div>';
 }
 
 /* ---------- AI-coach: modell ---------- */
@@ -601,7 +770,7 @@ var coachQ=null, projAmt=null;
 
 function cfg(){ return PROFILES[db.settings.riskProfile]||PROFILES["Balanserad"]; }
 function allContribs(){
-  var s=0; db.investments.forEach(function(i){ (i.contribs||[]).forEach(function(c){ s+=c.amount; }); });
+  var s=0; L("investments").forEach(function(i){ (i.contribs||[]).forEach(function(c){ s+=c.amount; }); });
   return s;
 }
 function coachData(){
@@ -635,7 +804,7 @@ function allocate(d){
 }
 function riskMix(){
   var t={lag:0,medel:0,hog:0}, tot=0;
-  db.investments.forEach(function(i){ var b=RISKOFTYPE[i.type]||"medel"; t[b]+=i.value; tot+=i.value; });
+  L("investments").forEach(function(i){ var b=RISKOFTYPE[i.type]||"medel"; t[b]+=i.value; tot+=i.value; });
   return {t:t,tot:tot};
 }
 function fv(start,monthly,years,rate){
@@ -713,7 +882,7 @@ function analysis(d){
   // koncentration
   if(inv.value>0){
     var worst=null;
-    db.investments.forEach(function(i){ var s=i.value/inv.value*100; if(!worst||s>worst.s) worst={n:i.name,s:s}; });
+    L("investments").forEach(function(i){ var s=i.value/inv.value*100; if(!worst||s>worst.s) worst={n:i.name,s:s}; });
     out.push(row(worst.s>40?"bad":worst.s>25?"mid":"ok","Största innehav",
       esc(worst.n)+" är "+pct(worst.s)+" av portföljen"));
     var hogAndel=mix.tot>0?mix.t.hog/mix.tot*100:0;
@@ -743,7 +912,7 @@ function answerQ(i,d,rows){
   }
   if(i===1){
     if(inv.value<=0) return "<p>Du har inga innehav inlagda, så det går inte att bedöma än.</p>";
-    var list=db.investments.map(function(x){return {n:x.name,s:x.value/inv.value*100};}).sort(function(a,b){return b.s-a.s;});
+    var list=L("investments").map(function(x){return {n:x.name,s:x.value/inv.value*100};}).sort(function(a,b){return b.s-a.s;});
     var t=list[0];
     return "<p>"+(t.s>40
       ? "Ja – "+esc(t.n)+" står för "+pct(t.s)+" av portföljen. Över ungefär 40 % i ett innehav betyder att din utveckling i praktiken avgörs av den enda posten. Ett vanligt sätt att rätta till det utan att sälja är att lägga nya insättningar i de övriga delarna tills andelen sjunker."
@@ -807,14 +976,15 @@ function aiContext(){
   var d=coachData(), rows=allocate(d), mix=riskMix();
   var byCat={}; expOf(view).forEach(function(e){ byCat[e.cat]=(byCat[e.cat]||0)+e.amount; });
   var hist=activeMonths().slice(-6).map(function(m){ return m+": sparat "+Math.round(savedOf(m))+" kr"; });
-  var inv=db.investments.map(function(i){
+  var inv=L("investments").map(function(i){
     return "- "+i.name+" ("+i.type+"): investerat "+Math.round(i.invested)+" kr, värde "+Math.round(i.value)+
       " kr, "+(d.inv.value>0?Math.round(i.value/d.inv.value*100):0)+" % av portföljen";
   });
   return [
+    "Detta är ETT gemensamt hushåll med två personer och en gemensam ekonomi. Skriv i vi-form.",
     "AKTUELL MÅNAD ("+view+")",
     "Inkomst: "+Math.round(d.inc)+" kr/mån",
-    "Fasta utgifter: "+Math.round(d.fix)+" kr ("+db.fixed.map(function(f){return f.name+" "+Math.round(f.amount);}).join(", ")+")",
+    "Fasta utgifter: "+Math.round(d.fix)+" kr ("+L("fixed").map(function(f){return f.name+" "+Math.round(f.amount);}).join(", ")+")",
     "Rörliga utgifter: "+Math.round(d.vr)+" kr, per kategori: "+(Object.keys(byCat).map(function(c){return c+" "+Math.round(byCat[c]);}).join(", ")||"inga"),
     "Sparat denna månad: "+Math.round(d.sav)+" kr (spargrad "+(d.inc>0?Math.round(d.sav/d.inc*100):0)+" %)",
     "Redan investerat denna månad: "+Math.round(d.invM)+" kr. Kvar att fördela: "+Math.round(d.over)+" kr",
@@ -934,7 +1104,7 @@ function wire(){
   on("qa","keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); addQuick(); } });
   document.querySelectorAll("[data-del]").forEach(function(b){
     b.onclick=function(){
-      db.expenses=db.expenses.filter(function(x){return x.id!==b.getAttribute("data-del");});
+      killItem("expenses",b.getAttribute("data-del"));
       save(); render(); toast("Borttagen");
     };
   });
@@ -960,7 +1130,7 @@ function wire(){
   document.querySelectorAll("[data-rm]").forEach(function(b){
     b.onclick=function(){
       var p=b.getAttribute("data-rm").split(":");
-      db[p[0]]=db[p[0]].filter(function(x){return x.id!==p[1];});
+      killItem(p[0],p[1]);
       save(); render();
     };
   });
@@ -969,6 +1139,7 @@ function wire(){
     db.settings.monthlyGoal=num(document.getElementById("gM").value);
     db.settings.totalGoal=num(document.getElementById("gT").value);
     db.settings.startSavings=num(document.getElementById("gS").value);
+    var gd=document.getElementById("gD"); if(gd) db.settings.targetDate=gd.value;
     save(); render(); toast("Målen sparade");
   });
   // invest
@@ -994,9 +1165,27 @@ function wire(){
   });
   document.querySelectorAll("[data-rminv]").forEach(function(b){
     b.onclick=function(){
-      db.investments=db.investments.filter(function(x){return x.id!==b.getAttribute("data-rminv");});
+      killItem("investments",b.getAttribute("data-rminv"));
       save(); render();
     };
+  });
+  // hushåll
+  on("syNew","click",function(){ document.getElementById("syHid").value=newHid(); });
+  on("sySave","click",function(){
+    var c=syncCfg()||{};
+    c.me=document.getElementById("syMe").value.trim();
+    c.url=document.getElementById("syUrl").value.trim();
+    c.key=document.getElementById("syKey").value.trim();
+    c.hid=document.getElementById("syHid").value.trim();
+    setSyncCfg(c); syncState.err=null; render();
+    if(c.url&&c.key&&c.hid) syncNow(); else toast("Sparat");
+  });
+  on("syNow","click",function(){ syncNow(); });
+  on("syInvite","click",function(){
+    var t=inviteLink();
+    if(navigator.share) navigator.share({title:"Ekonomi",url:t}).catch(function(){});
+    else if(navigator.clipboard) navigator.clipboard.writeText(t).then(function(){ toast("Länk kopierad"); });
+    else prompt("Kopiera länken",t);
   });
   // ai
   on("akeySave","click",function(){
@@ -1087,6 +1276,11 @@ function setTab(t){
 document.querySelectorAll("nav button").forEach(function(b){
   b.addEventListener("click",function(){ setTab(b.getAttribute("data-tab")); });
 });
+readSetupParam();
+rebuildSnap();
+document.addEventListener("visibilitychange",function(){ if(!document.hidden) syncNow(true); });
+setInterval(function(){ if(!document.hidden) syncNow(true); },20000);
+setTimeout(function(){ syncNow(true); },300);
 document.getElementById("prevM").addEventListener("click",function(){ view=shiftMonth(view,-1); render(); });
 document.getElementById("nextM").addEventListener("click",function(){ view=shiftMonth(view,1); render(); });
 
