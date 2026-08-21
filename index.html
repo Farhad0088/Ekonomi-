@@ -644,11 +644,15 @@ function mergeDoc(rem){
   }
   return changed;
 }
+function clean(v){ return String(v||"").replace(/[\s\u200B-\u200D\uFEFF]/g,""); }
 function rpc(fn,body){
   var c=syncCfg();
-  return fetch(c.url.replace(/\/+$/,"")+"/rest/v1/rpc/"+fn,{
+  var key=clean(c.key), url=clean(c.url).replace(/\/+$/,"");
+  if(!/^https:\/\/[a-z0-9-]+\.supabase\.(co|in)$/i.test(url)) return Promise.reject(new Error("URL:en ser fel ut: "+url));
+  if(key.length<20) return Promise.reject(new Error("Nyckeln ser för kort ut"));
+  return fetch(url+"/rest/v1/rpc/"+fn,{
     method:"POST",
-    headers:{"content-type":"application/json","apikey":c.key,"authorization":"Bearer "+c.key},
+    headers:{"content-type":"application/json","apikey":key,"authorization":"Bearer "+key},
     body:JSON.stringify(body)
   }).then(function(r){
     if(!r.ok) return r.text().then(function(t){ throw new Error(r.status+": "+t.slice(0,120)); });
@@ -677,7 +681,8 @@ function syncNow(silent){
     });
   }).catch(function(e){
     syncState.busy=false;
-    syncState.err=/Failed to fetch|NetworkError/.test(e.message)?"Ingen kontakt med servern":e.message;
+    syncState.err=/Failed to fetch|NetworkError|Load failed/.test(e.message)
+      ?"Ingen kontakt med servern – kontrollera URL och nyckel":e.message;
     render();
   });
 }
@@ -722,7 +727,7 @@ function viewHushall(){
     '<p class="hint" style="margin:0 0 12px">Två telefoner, en gemensam ekonomi. Uppgifterna nedan sparas bara i telefonen – aldrig i koden på GitHub.</p>'+
     '<div class="field"><label>Ditt namn</label><input type="text" id="syMe" value="'+esc(c.me||"")+'" placeholder="Ditt förnamn" autocomplete="off"></div>'+
     '<div class="field"><label>Projekt-URL</label><input type="text" id="syUrl" value="'+esc(c.url||"")+'" placeholder="https://xxxx.supabase.co" autocomplete="off" autocapitalize="none"></div>'+
-    '<div class="field"><label>Publik nyckel (anon)</label><input type="password" id="syKey" value="'+esc(c.key||"")+'" placeholder="eyJ..." autocomplete="off"></div>'+
+    '<div class="field"><label>Publik nyckel (anon) – börjar med eyJ</label><input type="text" id="syKey" spellcheck="false" value="'+esc(c.key||"")+'" placeholder="eyJ..." autocomplete="off"></div>'+
     '<div class="field"><label>Hushålls-ID</label><input type="text" id="syHid" value="'+esc(c.hid||"")+'" placeholder="tryck Skapa nytt" autocomplete="off" autocapitalize="none"></div>'+
     '<div class="two"><button class="btn ghost sm" id="syNew">Skapa nytt ID</button>'+
     '<button class="btn sm" id="sySave">Spara</button></div>'+
@@ -1174,9 +1179,9 @@ function wire(){
   on("sySave","click",function(){
     var c=syncCfg()||{};
     c.me=document.getElementById("syMe").value.trim();
-    c.url=document.getElementById("syUrl").value.trim();
-    c.key=document.getElementById("syKey").value.trim();
-    c.hid=document.getElementById("syHid").value.trim();
+    c.url=clean(document.getElementById("syUrl").value);
+    c.key=clean(document.getElementById("syKey").value);
+    c.hid=clean(document.getElementById("syHid").value);
     setSyncCfg(c); syncState.err=null; render();
     if(c.url&&c.key&&c.hid) syncNow(); else toast("Sparat");
   });
