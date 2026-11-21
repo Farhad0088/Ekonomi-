@@ -81,6 +81,7 @@ button:disabled{cursor:default}
 .chip{font-size:12px;font-weight:700;font-family:"Chakra Petch";padding:2px 9px;border-radius:8px;background:var(--chrome);color:#07090c;white-space:nowrap}
 .conf{display:inline-flex;gap:3px}.conf i{width:14px;height:4px;border-radius:2px;background:var(--dim)}.conf i.f{background:var(--ink)}
 .now{color:var(--ink)}
+.stamp{font-size:12px;padding:2px 8px;border-radius:8px;border:1px solid var(--edge);white-space:nowrap}.stamp.ok{color:var(--hit);border-color:rgba(51,210,126,.4)}.stamp.late{color:#ffb199;border-color:rgba(255,90,31,.45)}
 details{grid-column:1/-1;font-size:15px;border-top:1px solid var(--edge);padding-top:6px}
 summary{cursor:pointer;color:var(--mute);font-size:14px;min-height:32px;display:flex;align-items:center}
 .why{margin:6px 0 4px}
@@ -142,7 +143,7 @@ aside .panel{background:var(--glass);border:1px solid var(--edge);border-radius:
 <ol>
 <li>Varje morgon 09:41 letar Claude upp Premier League- och Champions League-matcher de närmaste dagarna, läser skadelistor och lägger tips här, med motivering och säkerhet 1–5.</li>
 <li>Under matchdagar kollar Claude resultaten varje timme och skickar en notis till din telefon vid mål och slutresultat. Med sidan öppen uppdateras allt live.</li>
-<li>Facit räknas automatiskt. ”Pass” betyder att Claude avstod; de räknas inte.</li>
+<li>Facit räknas automatiskt. Bara tips som registrerats före avspark räknas, och varje kort visar när tipset lades. ”Pass” betyder att Claude avstod; de räknas inte.</li>
 </ol>
 <p class="note">Tips är underhållning, inte garantier. Spela bara för pengar du har råd att förlora. Stödlinjen: stodlinjen.se, 020-81 91 00.</p>
 </section></div>
@@ -167,8 +168,9 @@ function toast(t){const el=document.createElement('div');el.className='toast';el
 let actx=null;function beep(){try{actx=actx||new AudioContext();const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=880;g.gain.setValueAtTime(.15,actx.currentTime);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+.5);o.connect(g).connect(actx.destination);o.start();o.stop(actx.currentTime+.5)}catch(e){}}
 
 const list=()=>Object.values(matches);
-const tipped=()=>list().filter(m=>m.tip&&m.tip!=='PASS');
-const decided=m=>m.tip&&m.tip!=='PASS'&&m.status==='post'&&grade(m.tip,m.hs,m.as)!==null;
+const valid=m=>!!m.tippedAt&&new Date(m.tippedAt).getTime()<new Date(m.kickoff).getTime();
+const tipped=()=>list().filter(m=>m.tip&&m.tip!=='PASS'&&valid(m));
+const decided=m=>m.tip&&m.tip!=='PASS'&&valid(m)&&m.status==='post'&&grade(m.tip,m.hs,m.as)!==null;
 function render(){renderStats();renderRing();renderTabs();renderCoupon();renderFeed()}
 
 function renderStats(){
@@ -209,13 +211,14 @@ function renderCoupon(){
  const d=rows.filter(decided),h=d.filter(m=>grade(m.tip,m.hs,m.as)).length;
  const li=a=>a&&a.length?`<ul>${a.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p>Inga kända frånvarande.</p>';
  $('coupon').innerHTML=`<div class="chead"><h3>${esc(rows[0].roundLabel||round)}</h3><span>${d.length?`${h} rätt av ${d.length} avgjorda`:'Inga avgjorda ännu'} · ${rows.filter(m=>m.tip!=='PASS').length} tips · ${rows.filter(m=>m.tip==='PASS').length} pass</span></div><div class="cards">`+rows.map(m=>{
-  const g=grade(m.tip,m.hs,m.as),cls=m.status==='post'&&g!==null&&m.tip!=='PASS'?(g?'hit':'miss'):(m.status==='in'?'on':'');
-  const pill=m.status==='void'?'<span class="pill">Uppskjuten</span>':m.status==='in'?`<span class="pill live">LIVE ${esc(m.clock||'')}</span>`:m.status==='post'?(m.tip==='PASS'?'<span class="pill">Slut · pass</span>':`<span class="pill ${g?'hit':'miss'}">${g?'Rätt':'Fel'}</span>`):`<span class="pill">${esc(fmtK(m.kickoff))}</span>`;
-  const now=m.status==='in'&&g!==null&&m.tip!=='PASS'?`<span class="now">${g?'Går in just nu':'Går inte in just nu'}</span>`:'';
+  const g=grade(m.tip,m.hs,m.as),ok=valid(m),cls=decided(m)?(g?'hit':'miss'):(m.status==='in'?'on':'');
+  const pill=m.status==='void'?'<span class="pill">Uppskjuten</span>':m.status==='in'?`<span class="pill live">LIVE ${esc(m.clock||'')}</span>`:m.status==='post'?(m.tip==='PASS'?'<span class="pill">Slut · pass</span>':!ok?'<span class="pill">Slut · räknas ej</span>':`<span class="pill ${g?'hit':'miss'}">${g?'Rätt':'Fel'}</span>`):`<span class="pill">${esc(fmtK(m.kickoff))}</span>`;
+  const stamp=m.tip==='PASS'?'':ok?`<span class="stamp ok">Lagt före avspark</span>`:`<span class="stamp late">Registrerat efter avspark · räknas ej</span>`;
+  const now=m.status==='in'&&ok&&g!==null&&m.tip!=='PASS'?`<span class="now">${g?'Går in just nu':'Går inte in just nu'}</span>`:'';
   const chip=['O2.5','U2.5','BTTS','PASS'].includes(m.tip)?`<span class="chip">${TIPLBL[m.tip]}</span>`:'';
   const conf=m.tip!=='PASS'?`<span class="conf" title="Säkerhet ${m.confidence||0} av 5">${[1,2,3,4,5].map(x=>`<i class="${x<=(m.confidence||0)?'f':''}"></i>`).join('')}</span>`:'';
-  return`<article class="card ${cls}"><div class="teams"><b>${esc(m.home)}</b><b>${esc(m.away)}</b><div class="meta">${pill}<span>${esc(m.league||'')}</span>${chip}${conf}${now}</div></div><div class="score">${m.hs==null?'–':m.hs+'–'+m.as}<small>${m.status==='post'?'slut':m.status==='in'?esc(m.clock||''):'avspark '+esc(fmtK(m.kickoff).split(' ').pop())}</small></div><div class="boxes">${['1','X','2'].map(k=>boxHtml(m,k)).join('')}</div>
-  <details${answers[m.id]?' open':''}><summary>Motivering och skador</summary><p class="why"><b>${esc(m.tipText||TIPLBL[m.tip]||'')}</b>${m.tipText?'. ':''}${esc(m.reason||'')}</p><div class="inj"><div><h4>${esc(m.home)} saknar</h4>${li(m.injHome)}</div><div><h4>${esc(m.away)} saknar</h4>${li(m.injAway)}</div></div>${m.tippedAt?`<p class="note">Tipset lades ${esc(fmtT(m.tippedAt))}.</p>`:''}${sample?`<div class="ask"><button data-ask="${esc(m.id)}">${m.status==='in'?'Claudes läge just nu':m.status==='post'?'Claudes efteranalys':'Fråga Claude om matchen'}</button></div>`:''}${answers[m.id]?`<div class="ans">${esc(answers[m.id])}</div>`:''}</details></article>`}).join('')+'</div>';
+  return`<article class="card ${cls}"><div class="teams"><b>${esc(m.home)}</b><b>${esc(m.away)}</b><div class="meta">${pill}<span>${esc(m.league||'')}</span>${chip}${conf}${now}${stamp}</div></div><div class="score">${m.hs==null?'–':m.hs+'–'+m.as}<small>${m.status==='post'?'slut':m.status==='in'?esc(m.clock||''):'avspark '+esc(fmtK(m.kickoff).split(' ').pop())}</small></div><div class="boxes">${['1','X','2'].map(k=>boxHtml(m,k)).join('')}</div>
+  <details${answers[m.id]?' open':''}><summary>Motivering och skador</summary><p class="why"><b>${esc(m.tipText||TIPLBL[m.tip]||'')}</b>${m.tipText?'. ':''}${esc(m.reason||'')}</p><div class="inj"><div><h4>${esc(m.home)} saknar</h4>${li(m.injHome)}</div><div><h4>${esc(m.away)} saknar</h4>${li(m.injAway)}</div></div><p class="note">${m.tippedAt?`Tipset registrerades ${esc(fmtT(m.tippedAt))}, avspark ${esc(fmtT(m.kickoff))}.`:'Registreringstid saknas, tipset räknas inte.'}${ok?'':' Bara tips som registrerats före avspark räknas i facit.'}</p>${sample?`<div class="ask"><button data-ask="${esc(m.id)}">${m.status==='in'?'Claudes läge just nu':m.status==='post'?'Claudes efteranalys':'Fråga Claude om matchen'}</button></div>`:''}${answers[m.id]?`<div class="ans">${esc(answers[m.id])}</div>`:''}</details></article>`}).join('')+'</div>';
 }
 function renderFeed(){
  const ev=[...events].sort((a,b)=>String(b.at).localeCompare(String(a.at))).slice(0,40);
@@ -266,9 +269,9 @@ async function onScores(res){
   const ch={};if(state!==m.status)ch.status=state;if(hs!==m.hs)ch.hs=hs;if(as!==m.as)ch.as=as;if(clock!==m.clock)ch.clock=clock;
   if(!Object.keys(ch).length)continue;
   let msg=null;const sc=`${m.home} ${hs}–${as} ${m.away}`;
-  if(state==='post'&&m.status!=='post'){const g=grade(m.tip,hs,as);msg=`Slut: ${sc}. `+(m.tip==='PASS'?'Claude passade.':g?`Claudes tips ${TIPLBL[m.tip]} gick in ✓`:`Claudes tips ${TIPLBL[m.tip]} gick inte in ✗`);if(m.tip!=='PASS')ch.result=g?'hit':'miss'}
+  if(state==='post'&&m.status!=='post'){const g=grade(m.tip,hs,as);msg=`Slut: ${sc}. `+(m.tip==='PASS'?'Claude passade.':!valid(m)?'Tipset räknas inte (registrerat efter avspark).':g?`Claudes tips ${TIPLBL[m.tip]} gick in ✓`:`Claudes tips ${TIPLBL[m.tip]} gick inte in ✗`);if(m.tip!=='PASS')ch.result=g?'hit':'miss'}
   else if(state==='in'&&m.status==='pre')msg=`Avspark: ${m.home}–${m.away}.`;
-  else if((hs!==m.hs||as!==m.as)&&m.hs!=null)msg=`MÅL! ${sc} (${clock}).`+(m.tip!=='PASS'?` Tipset ${TIPLBL[m.tip]} ${grade(m.tip,hs,as)?'går in':'går inte in'} just nu.`:'');
+  else if((hs!==m.hs||as!==m.as)&&m.hs!=null)msg=`MÅL! ${sc} (${clock}).`+(m.tip!=='PASS'&&valid(m)?` Tipset ${TIPLBL[m.tip]} ${grade(m.tip,hs,as)?'går in':'går inte in'} just nu.`:'');
   await apply(m,ch,msg)}}
  if(liveOn&&unwatch)$('liveNote').textContent=`Live · uppdaterad ${new Intl.DateTimeFormat('sv-SE',{timeZone:TZ,hour:'2-digit',minute:'2-digit'}).format(new Date())} · var 2:a minut.`;
  render();syncWatch();
