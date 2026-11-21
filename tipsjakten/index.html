@@ -99,6 +99,41 @@ aside .panel{background:var(--glass);border:1px solid var(--edge);border-radius:
 .state{font-size:15px;color:var(--mute);min-height:1.5em;margin:0 0 10px}
 .toasts{position:fixed;top:14px;right:14px;display:grid;gap:8px;z-index:9;max-width:min(360px,calc(100vw - 28px))}
 .toast{background:rgba(13,17,23,.92);border:1px solid rgba(255,90,31,.6);color:var(--ink);padding:12px 14px;border-radius:14px;box-shadow:0 0 30px rgba(255,90,31,.3);font-size:15px;backdrop-filter:blur(10px)}
+.slip h2 span{font-size:14px;color:var(--mute);font-weight:500;margin-left:6px}
+.lbl{font-size:13px;color:var(--mute);margin:10px 0 6px}
+.nums{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.nums button{padding:0;min-height:40px;font-family:"Chakra Petch";font-weight:700}
+.seg2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.legs{display:grid;gap:8px;margin:12px 0}
+.leg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:6px;align-items:center;padding:10px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--edge);font-size:14px}
+.leg .nm{line-height:1.3;grid-column:1/-1}.leg .nm small{display:block;color:var(--mute);font-size:12px}
+.leg select,.leg input,.money input{font:inherit;font-size:16px;color:var(--ink);background:#0d1117;border:1px solid var(--edge);border-radius:10px;min-height:40px;padding:0 8px}
+.leg select{width:100%}.leg input{width:100%;text-align:right}
+.leg .x{min-height:40px;padding:0 10px;color:var(--mute)}
+.leg.bad{border-color:rgba(255,77,94,.5)}
+.money{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.money label{font-size:14px;color:var(--mute)}.money input{width:7em;text-align:right}
+.chips2{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chips2 button{min-height:36px;padding:0 12px;font-size:14px}
+.win{margin:14px 0 10px;padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(51,210,126,.14),rgba(51,210,126,.03));border:1px solid rgba(51,210,126,.35)}
+.win .big{font-family:"Chakra Petch";font-size:clamp(30px,4vw,38px);font-weight:700;line-height:1.05;color:var(--hit);white-space:nowrap}
+.win .row2{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:var(--mute);margin-top:6px;flex-wrap:wrap}.win .row2 b{color:var(--ink);font-variant-numeric:tabular-nums}
+.warn{font-size:13px;color:#ffb199;margin:6px 0}
+.budget{margin:8px 0 12px;border-top:1px solid var(--edge)}
+.budget p{font-size:14px;margin:6px 0}
+.primary{width:100%;background:var(--hot);border-color:var(--hot);color:#fff;font-weight:600}
+.primary:hover{background:#ff6d38}
+.odds{font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums;white-space:nowrap}
+.add{min-height:46px;padding:0 12px;font-size:14px;border-radius:12px}
+.add[aria-pressed=true]{background:var(--hot);border-color:var(--hot);color:#fff}
+.sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.sum div{background:rgba(255,255,255,.03);border:1px solid var(--edge);border-radius:12px;padding:10px}
+.sum b{display:block;font-family:"Chakra Petch";font-size:22px;white-space:nowrap}.sum span{font-size:12px;color:var(--mute)}
+.bet{padding:10px 0;border-bottom:1px solid var(--edge);font-size:14px}.bet:last-child{border:0}
+.bet .hd{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.bet ul{margin:6px 0 0;padding-left:18px;color:#c8d0da}
+.bet .del{min-height:32px;padding:0 10px;font-size:13px;color:var(--mute)}
+.pos{color:var(--hit)}.neg{color:var(--miss)}
+.slipbar{display:none}
+@media(max-width:900px){.slipbar{position:fixed;left:12px;right:12px;bottom:12px;z-index:8;display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 16px;border-radius:16px;background:rgba(13,17,23,.94);border:1px solid rgba(255,90,31,.6);color:var(--ink);text-decoration:none;box-shadow:0 0 30px rgba(255,90,31,.3);backdrop-filter:blur(10px);font-size:15px}.slipbar[hidden]{display:none}.slipbar b{color:var(--hit);font-family:"Chakra Petch";font-size:18px}body{padding-bottom:84px}}
 .how{border-top:1px solid var(--edge);padding-top:28px;padding-bottom:48px}.how ol{padding-left:20px;max-width:70ch;color:#c8d0da}
 @media(max-width:900px){main{grid-template-columns:minmax(0,1fr)}.top{grid-template-columns:minmax(0,1fr)}.ring{max-width:340px}}
 @media(max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.card{grid-template-columns:minmax(0,1fr) auto;padding:14px}.boxes{grid-column:1/-1}.score{font-size:32px}.inj{grid-template-columns:minmax(0,1fr)}}
@@ -129,6 +164,24 @@ aside .panel{background:var(--glass);border:1px solid var(--edge);border-radius:
 <p class="note">Krom-ruta = Claudes tips. Orange glöd = ditt eget tips (välj före avspark). Andra spel visas som etikett: Ö2,5, U2,5 eller BLGM (båda lagen gör mål).</p>
 </section>
 <aside>
+<div class="panel slip" id="kupong">
+<h2>Spelkupong<span id="slipcount"></span></h2>
+<p class="note" style="margin:0">Välj hur många av Claudes tips du vill spela, ändra val och odds om du vill, och se vad vinsten blir.</p>
+<div class="lbl">Antal matcher</div>
+<div class="nums" id="nums"></div>
+<div class="seg2"><button data-mode="kombi" aria-pressed="true">Kombination</button><button data-mode="single" aria-pressed="false">Singlar</button></div>
+<p class="note" id="modehelp" style="margin:6px 0 0"></p>
+<div class="legs" id="legs"></div>
+<div class="money"><label for="stake" id="stakelbl">Insats</label><input id="stake" type="number" inputmode="decimal" min="1" step="1" value="100"><span>kr</span></div>
+<div class="chips2" id="chips"></div>
+<div id="calc"></div>
+<details class="budget" id="budgetBox"><summary>Hur mycket kan jag satsa?</summary>
+<div class="money" style="margin-top:6px"><label for="budget">Min spelbudget per månad</label><input id="budget" type="number" inputmode="decimal" min="0" step="50" placeholder="t.ex. 1000"><span>kr</span></div>
+<div id="advice"></div></details>
+<button class="primary" id="saveSlip">Spara spelet och följ det</button>
+<p class="note">Sidan lägger inga spel hos något spelbolag. Spelet sparas här så att Tipsjakten räknar din vinst eller förlust. Oddsen är riktodds från DraftKings via ESPN; skriv in ditt spelbolags odds för exakt vinst.</p>
+</div>
+<div class="panel" id="mybets"><h2>Mina spel</h2><div class="sum" id="betsum"></div><div id="betlist"><p class="note">Inga sparade spel ännu.</p></div></div>
 <div class="panel">
 <h2>Live</h2>
 <div class="ctl"><button id="liveBtn" aria-pressed="true">Live på</button><button id="nowBtn">Uppdatera nu</button><button id="soundBtn" aria-pressed="false">Ljud av</button></div>
@@ -143,11 +196,13 @@ aside .panel{background:var(--glass);border:1px solid var(--edge);border-radius:
 <ol>
 <li>Varje morgon 09:41 letar Claude upp Premier League- och Champions League-matcher de närmaste dagarna, läser skadelistor och lägger tips här, med motivering och säkerhet 1–5.</li>
 <li>Under matchdagar kollar Claude resultaten varje timme och skickar en notis till din telefon vid mål och slutresultat. Med sidan öppen uppdateras allt live.</li>
+<li>Spelkupongen: välj 1–10 av Claudes tips, kombination eller singlar, och se möjlig vinst direkt. Sparade spel räknas av automatiskt under ”Mina spel”.</li>
 <li>Facit räknas automatiskt. Bara tips som registrerats före avspark räknas, och varje kort visar när tipset lades. ”Pass” betyder att Claude avstod; de räknas inte.</li>
 </ol>
 <p class="note">Tips är underhållning, inte garantier. Spela bara för pengar du har råd att förlora. Stödlinjen: stodlinjen.se, 020-81 91 00.</p>
 </section></div>
 <div class="toasts" id="toasts" aria-live="polite"></div>
+<a class="slipbar" id="slipbar" href="#kupong" hidden></a>
 
 <script>
 {
@@ -171,7 +226,7 @@ const list=()=>Object.values(matches);
 const valid=m=>!!m.tippedAt&&new Date(m.tippedAt).getTime()<new Date(m.kickoff).getTime();
 const tipped=()=>list().filter(m=>m.tip&&m.tip!=='PASS'&&valid(m));
 const decided=m=>m.tip&&m.tip!=='PASS'&&valid(m)&&m.status==='post'&&grade(m.tip,m.hs,m.as)!==null;
-function render(){renderStats();renderRing();renderTabs();renderCoupon();renderFeed()}
+function render(){renderStats();renderRing();renderTabs();renderCoupon();renderFeed();renderSlip();renderBets()}
 
 function renderStats(){
  const d=list().filter(decided),hits=d.filter(m=>grade(m.tip,m.hs,m.as)).length;
@@ -217,7 +272,7 @@ function renderCoupon(){
   const now=m.status==='in'&&ok&&g!==null&&m.tip!=='PASS'?`<span class="now">${g?'Går in just nu':'Går inte in just nu'}</span>`:'';
   const chip=['O2.5','U2.5','BTTS','PASS'].includes(m.tip)?`<span class="chip">${TIPLBL[m.tip]}</span>`:'';
   const conf=m.tip!=='PASS'?`<span class="conf" title="Säkerhet ${m.confidence||0} av 5">${[1,2,3,4,5].map(x=>`<i class="${x<=(m.confidence||0)?'f':''}"></i>`).join('')}</span>`:'';
-  return`<article class="card ${cls}"><div class="teams"><b>${esc(m.home)}</b><b>${esc(m.away)}</b><div class="meta">${pill}<span>${esc(m.league||'')}</span>${chip}${conf}${now}${stamp}</div></div><div class="score">${m.hs==null?'–':m.hs+'–'+m.as}<small>${m.status==='post'?'slut':m.status==='in'?esc(m.clock||''):'avspark '+esc(fmtK(m.kickoff).split(' ').pop())}</small></div><div class="boxes">${['1','X','2'].map(k=>boxHtml(m,k)).join('')}</div>
+  return`<article class="card ${cls}"><div class="teams"><b>${esc(m.home)}</b><b>${esc(m.away)}</b><div class="meta">${pill}<span>${esc(m.league||'')}</span>${chip}${conf}${now}${stamp}${m.odds&&m.odds['1']?`<span class="odds">Odds ${oddsTxt(m.odds['1'])} · ${oddsTxt(m.odds.X)} · ${oddsTxt(m.odds['2'])}</span>`:''}</div></div><div class="score">${m.hs==null?'–':m.hs+'–'+m.as}<small>${m.status==='post'?'slut':m.status==='in'?esc(m.clock||''):'avspark '+esc(fmtK(m.kickoff).split(' ').pop())}</small></div><div class="boxes">${['1','X','2'].map(k=>boxHtml(m,k)).join('')}${open(m)?`<button class="add" data-slip="${esc(m.id)}" aria-pressed="${!!slip.legs[m.id]}">${slip.legs[m.id]?'✓ Kupong':'+ Kupong'}</button>`:''}</div>
   <details${answers[m.id]?' open':''}><summary>Motivering och skador</summary><p class="why"><b>${esc(m.tipText||TIPLBL[m.tip]||'')}</b>${m.tipText?'. ':''}${esc(m.reason||'')}</p><div class="inj"><div><h4>${esc(m.home)} saknar</h4>${li(m.injHome)}</div><div><h4>${esc(m.away)} saknar</h4>${li(m.injAway)}</div></div><p class="note">${m.tippedAt?`Tipset registrerades ${esc(fmtT(m.tippedAt))}, avspark ${esc(fmtT(m.kickoff))}.`:'Registreringstid saknas, tipset räknas inte.'}${ok?'':' Bara tips som registrerats före avspark räknas i facit.'}</p>${sample?`<div class="ask"><button data-ask="${esc(m.id)}">${m.status==='in'?'Claudes läge just nu':m.status==='post'?'Claudes efteranalys':'Fråga Claude om matchen'}</button></div>`:''}${answers[m.id]?`<div class="ans">${esc(answers[m.id])}</div>`:''}</details></article>`}).join('')+'</div>';
 }
 function renderFeed(){
@@ -241,6 +296,92 @@ async function ask(id,btn){
  const q=`Du är Claude och har lagt fotbollstipset nedan. Svara på svenska, högst 90 ord, utan rubriker. ${m.status==='in'?'Matchen pågår: bedöm hur tipset ser ut just nu och vad som behöver hända.':m.status==='post'?'Matchen är slut: gör en ärlig efteranalys av varför tipset gick in eller inte.':'Förklara kort hur du tänker och vad som är största risken med tipset.'} Hitta inte på händelser som inte står i datan.\n\nData: ${JSON.stringify(ctx)}`;
  try{const r=await sample(q,{cache:false,onText:({text})=>{answers[id]=text;const el=document.querySelector(`[data-ask="${CSS.escape(id)}"]`)?.closest('details')?.querySelector('.ans');if(el)el.textContent=text}});answers[id]=r.text}catch(err){answers[id]=err&&err.code==='not_granted'?'Claude-frågor är inte tillgängliga i den här vyn.':'Claude kunde inte svara just nu. Försök igen om en stund.'}
  render();
+}
+
+/* ---------- Spelkupong ---------- */
+const PICKS=['1','X','2','1X','X2','12','O2.5','U2.5','BTTS'];
+const kr=v=>new Intl.NumberFormat('sv-SE',{style:'currency',currency:'SEK',maximumFractionDigits:v<100?2:0,minimumFractionDigits:0}).format(v);
+const oddsTxt=v=>v?Number(v).toFixed(2).replace('.',','):'–';
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let slip=ls.get('tj-slip',{legs:{},order:[],mode:'kombi',stake:100}),budget=ls.get('tj-budget',null),bets=[];
+if(!slip.order)slip.order=Object.keys(slip.legs||{});
+function oddsFor(m,p){const o=m&&m.odds;if(!o)return null;const a=o['1'],x=o.X,b=o['2'],dc=(u,v)=>u&&v?Math.round(100/(1/u+1/v))/100:null;
+ switch(p){case'1':case'X':case'2':return o[p]||null;case'1X':return dc(a,x);case'X2':return dc(x,b);case'12':return dc(a,b);case'O2.5':return o.ou&&o.ou.line===2.5?o.ou.over:null;case'U2.5':return o.ou&&o.ou.line===2.5?o.ou.under:null;default:return null}}
+function probFor(m,p,od){const o=m&&m.odds;
+ if(o&&o['1']&&o.X&&o['2']&&['1','X','2','1X','X2','12'].includes(p)){const q={'1':1/o['1'],X:1/o.X,'2':1/o['2']},S=q['1']+q.X+q['2'];return p.split('').reduce((s,k)=>s+q[k]/S,0)}
+ if(o&&o.ou&&o.ou.line===2.5&&(p==='O2.5'||p==='U2.5')&&o.ou.over&&o.ou.under){const qo=1/o.ou.over,qu=1/o.ou.under;return(p==='O2.5'?qo:qu)/(qo+qu)}
+ return od?0.95/od:null}
+const open=m=>m&&m.status==='pre'&&new Date(m.kickoff).getTime()>Date.now()+6e4;
+const eligible=()=>list().filter(m=>open(m)&&m.tip&&m.tip!=='PASS'&&valid(m)).sort((a,b)=>(!!oddsFor(b,b.tip)-!!oddsFor(a,a.tip))||(b.confidence||0)-(a.confidence||0)||a.kickoff.localeCompare(b.kickoff));
+function saveDraft(){ls.set('tj-slip',slip)}
+function legIds(){return slip.order.filter(id=>slip.legs[id]&&matches[id])}
+function legOdds(id){const l=slip.legs[id];return l.odds!=null&&l.odds!==''?Number(l.odds):oddsFor(matches[id],l.pick)}
+function setN(n){const el=eligible();slip.legs={};slip.order=[];for(const m of el.slice(0,n)){slip.legs[m.id]={pick:m.tip,odds:null};slip.order.push(m.id)}saveDraft();renderSlip();renderCoupon()}
+function toggleLeg(id){const m=matches[id];if(!m)return;if(slip.legs[id]){delete slip.legs[id];slip.order=slip.order.filter(x=>x!==id)}else{if(legIds().length>=10){toast('Kupongen rymmer högst 10 matcher.');return}slip.legs[id]={pick:m.tip&&m.tip!=='PASS'?m.tip:'1',odds:null};slip.order.push(id)}saveDraft();renderSlip();renderCoupon()}
+function calcSlip(){const ids=legIds(),stake=Math.max(0,Number(slip.stake)||0);let tot=1,prob=1,miss=false;const rows=ids.map(id=>{const m=matches[id],od=legOdds(id),p=probFor(m,slip.legs[id].pick,od);if(!od)miss=true;else tot*=od;prob*=p||0;return{id,m,od,p}});
+ if(slip.mode==='kombi')return{ids,rows,miss,stake,total:stake,odds:tot,payout:stake*tot,prob};
+ const payAll=rows.reduce((s,r)=>s+(r.od?stake*r.od:0),0),expHits=rows.reduce((s,r)=>s+(r.p||0),0);return{ids,rows,miss,stake,total:stake*ids.length,payout:payAll,expHits}}
+function adviceFor(){if(!budget)return null;const k=slip.mode==='kombi'?0.01:0.02;return Math.max(10,Math.round(budget*k/10)*10)}
+function renderSlip(){
+ const n=legIds().length;$('slipcount').textContent=n?`${n} ${n===1?'match':'matcher'}`:'';
+ const el=eligible().length;$('nums').innerHTML=Array.from({length:10},(_,i)=>i+1).map(k=>`<button data-n="${k}" aria-pressed="${n===k}" ${k>el?'disabled':''}>${k}</button>`).join('');
+ document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===slip.mode));
+ $('modehelp').textContent=slip.mode==='kombi'?'Ett spel där alla matcher måste gå in. Oddsen multipliceras, så vinsten blir stor men risken hög.':'Ett spel per match med samma insats. Varje rätt match ger vinst för sig.';
+ $('stakelbl').textContent=slip.mode==='kombi'?'Insats':'Insats per match';
+ if(document.activeElement!==$('stake'))$('stake').value=slip.stake;
+ const adv=adviceFor();$('chips').innerHTML=[10,50,100,200].map(v=>`<button data-stake="${v}">${v} kr</button>`).join('')+(adv?`<button data-stake="${adv}">Förslag ${adv} kr</button>`:'');
+ if(!n){$('legs').innerHTML=`<p class="note">${el?'Välj antal matcher ovan, eller tryck ”+ Kupong” på ett matchkort.':'Inga kommande tips att spela just nu. Nya tips kommer varje morgon.'}</p>`;$('calc').innerHTML='';$('saveSlip').disabled=true;$('slipbar').hidden=true;renderAdvice();return}
+ const c=calcSlip();
+ $('legs').innerHTML=c.rows.map(r=>{const l=slip.legs[r.id],m=r.m,locked=!open(m);return`<div class="leg${!r.od||locked?' bad':''}"><div class="nm">${esc(m.home)}–${esc(m.away)}<small>${esc(fmtK(m.kickoff))}${l.pick===m.tip?' · Claudes tips':' · eget val'}${r.p?` · ≈${Math.round(r.p*100)} %`:''}${locked?' · har startat':''}</small></div>
+ <select data-legpick="${esc(r.id)}" aria-label="Spel">${PICKS.map(p=>`<option value="${p}"${p===l.pick?' selected':''}>${TIPLBL[p]}</option>`).join('')}</select>
+ <input data-legodds="${esc(r.id)}" type="number" inputmode="decimal" step="0.01" min="1.01" aria-label="Odds" placeholder="odds" value="${l.odds!=null&&l.odds!==''?esc(l.odds):(oddsFor(m,l.pick)||'')}">
+ <button class="x" data-legdel="${esc(r.id)}" aria-label="Ta bort">✕</button></div>`}).join('');
+ let h='';
+ if(slip.mode==='kombi')h=`<div class="win"><div class="note" style="margin:0">Om alla ${n} går in får du</div><div class="big">${c.miss?'–':kr(c.payout)}</div><div class="row2"><span>Totalodds <b>${c.miss?'–':oddsTxt(c.odds)}</b></span><span>Vinst <b>${c.miss?'–':kr(c.payout-c.stake)}</b></span><span>Chans enligt oddsen <b>${c.miss||!c.prob?'–':(c.prob*100<1?'<1':Math.round(c.prob*100))+' %'}</b></span></div></div>`;
+ else h=`<div class="win"><div class="note" style="margin:0">Om alla ${n} går in får du</div><div class="big">${c.miss?'–':kr(c.payout)}</div><div class="row2"><span>Total insats <b>${kr(c.total)}</b></span><span>Vinst <b>${c.miss?'–':kr(c.payout-c.total)}</b></span><span>Väntat antal rätt <b>${c.expHits?c.expHits.toFixed(1).replace('.',','):'–'} av ${n}</b></span></div></div>`;
+ if(c.miss)h+='<p class="warn">Odds saknas för minst ett spel (t.ex. BLGM). Skriv in oddset från ditt spelbolag.</p>';
+ if(budget&&c.total>budget*0.1)h+=`<p class="warn">Insatsen är över 10 % av din månadsbudget (${kr(budget)}). Överväg en lägre insats.</p>`;
+ $('calc').innerHTML=h;$('saveSlip').disabled=c.miss||c.rows.some(r=>!open(r.m))||!(c.stake>0)||!db;
+ $('slipbar').hidden=false;$('slipbar').innerHTML=`<span>Kupong · ${n} ${n===1?'match':'matcher'} · ${slip.mode==='kombi'?'odds '+(c.miss?'–':oddsTxt(c.odds)):'singlar'}</span><b>${c.miss?'–':kr(c.payout)}</b>`;
+ renderAdvice();
+}
+function renderAdvice(){
+ if(!budget){$('advice').innerHTML='<p>Skriv in hur mycket du har råd att spela för per månad, pengar du klarar dig utan. Då föreslår sidan en insats.</p>';return}
+ const k=Math.max(10,Math.round(budget*0.01/10)*10),s=Math.max(10,Math.round(budget*0.02/10)*10),r=Math.round(budget*0.1);
+ $('advice').innerHTML=`<p>Med ${kr(budget)} i månaden:</p><p>Kombination: högst <b>${kr(k)}</b> per spel (1 %), eftersom risken är hög.</p><p>Singlar: högst <b>${kr(s)}</b> per match (2 %).</p><p>Totalt per omgång: högst <b>${kr(r)}</b> (10 %), så att budgeten räcker hela månaden även vid förluster.</p><p class="note">Riktmärken för att hålla spelandet hållbart, inga löften om vinst. Jaga aldrig förluster.</p>`;
+}
+document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+ if(t.dataset.n){setN(+t.dataset.n);return}
+ if(t.dataset.mode){slip.mode=t.dataset.mode;const a=adviceFor();saveDraft();renderSlip();return}
+ if(t.dataset.stake){slip.stake=+t.dataset.stake;saveDraft();renderSlip();return}
+ if(t.dataset.legdel){toggleLeg(t.dataset.legdel);return}
+ if(t.dataset.slip){toggleLeg(t.dataset.slip);return}
+ if(t.dataset.delbet){delBet(t.dataset.delbet,t);return}
+});
+document.addEventListener('change',e=>{const t=e.target;
+ if(t.dataset.legpick){slip.legs[t.dataset.legpick].pick=t.value;slip.legs[t.dataset.legpick].odds=null;saveDraft();renderSlip()}
+ else if(t.dataset.legodds){const v=parseFloat(String(t.value).replace(',','.'));slip.legs[t.dataset.legodds].odds=v>1?v:null;saveDraft();renderSlip()}
+ else if(t.id==='stake'){slip.stake=Math.max(0,parseFloat(String(t.value).replace(',','.'))||0);saveDraft();renderSlip()}
+ else if(t.id==='budget'){const v=parseFloat(String(t.value).replace(',','.'));budget=v>0?v:null;ls.set('tj-budget',budget);renderSlip()}
+});
+$('saveSlip').onclick=async()=>{const c=calcSlip();if(!db||c.miss||!c.ids.length)return;$('saveSlip').disabled=true;
+ const legs=c.rows.map(r=>({matchId:r.id,home:r.m.home,away:r.m.away,kickoff:r.m.kickoff,pick:slip.legs[r.id].pick,odds:r.od,claude:r.m.tip}));
+ try{await db.collection('slips').add({created:new Date().toISOString(),mode:slip.mode,stake:c.stake,legs,totalOdds:slip.mode==='kombi'?Math.round(c.odds*100)/100:null});toast(`Spelet sparat: ${kr(c.total)} insats, möjlig utbetalning ${kr(c.payout)}.`);slip={legs:{},order:[],mode:slip.mode,stake:slip.stake};saveDraft();renderSlip();renderCoupon();document.getElementById('mybets').scrollIntoView({behavior:'smooth',block:'start'})}catch(err){toast('Kunde inte spara spelet.');$('saveSlip').disabled=false}};
+async function delBet(id,btn){if(btn.dataset.sure!=='1'){btn.dataset.sure='1';btn.textContent='Säker? Tryck igen';setTimeout(()=>{btn.dataset.sure='';btn.textContent='Ta bort'},4000);return}try{await db.doc('slips/'+id).delete()}catch(e){toast('Kunde inte ta bort spelet.')}}
+function legState(l){const m=matches[l.matchId];if(!m)return'pending';if(m.status==='void')return'void';if(m.status!=='post'||m.hs==null)return'pending';return grade(l.pick,m.hs,m.as)?'hit':'miss'}
+function settle(b){const st=b.legs.map(legState);
+ if(b.mode==='kombi'){if(st.includes('miss'))return{state:'lost',stake:b.stake,pay:0,st};if(st.includes('pending'))return{state:'open',stake:b.stake,pay:null,st};const o=b.legs.reduce((p,l,i)=>p*(st[i]==='void'?1:l.odds),1);return{state:'won',stake:b.stake,pay:b.stake*o,st}}
+ let pay=0,open=false;b.legs.forEach((l,i)=>{if(st[i]==='hit')pay+=b.stake*l.odds;else if(st[i]==='void')pay+=b.stake;else if(st[i]==='pending')open=true});
+ const stake=b.stake*b.legs.length;return{state:open?'open':pay>=stake?'won':'lost',stake,pay,st,partial:open}}
+function renderBets(){
+ if(!bets.length){$('betsum').innerHTML='';$('betlist').innerHTML='<p class="note">Inga sparade spel ännu. Bygg en kupong ovan och tryck ”Spara spelet”.</p>';return}
+ let ins=0,ut=0,openStake=0;const rows=bets.map(b=>{const s=settle(b);if(s.state==='open'&&!s.partial)openStake+=s.stake;else if(s.state==='open'){openStake+=s.stake}else{ins+=s.stake;ut+=s.pay}return{b,s}});
+ const net=ut-ins;
+ $('betsum').innerHTML=`<div><b>${kr(ins)}</b><span>insatt, avgjort</span></div><div><b>${kr(ut)}</b><span>utbetalt</span></div><div><b class="${net>=0?'pos':'neg'}">${net>=0?'+':''}${kr(net)}</b><span>netto</span></div><div><b>${kr(openStake)}</b><span>i pågående spel</span></div>`;
+ const lab={open:'Pågår',won:'Vunnet',lost:'Förlorat'},cl={open:'',won:'hit',lost:'miss'},ic={hit:'✓',miss:'✗',void:'↺',pending:'·'};
+ $('betlist').innerHTML=rows.map(({b,s})=>`<div class="bet"><div class="hd"><span><span class="pill ${cl[s.state]}">${lab[s.state]}</span> ${b.mode==='kombi'?`Kombination ${b.legs.length} st · odds ${oddsTxt(b.totalOdds)}`:`${b.legs.length} singlar`}</span><button class="del" data-delbet="${esc(b.id)}">Ta bort</button></div>
+ <div class="note">Insats ${kr(s.stake)} · ${s.state==='open'?(b.mode==='kombi'?'möjlig utbetalning '+kr(b.stake*b.totalOdds):'hittills '+kr(s.pay||0)):'utbetalt '+kr(s.pay)} · ${esc(fmtT(b.created))}</div>
+ <ul>${b.legs.map((l,i)=>`<li>${ic[s.st[i]]} ${esc(l.home)}–${esc(l.away)}: ${esc(TIPLBL[l.pick]||l.pick)} @ ${oddsTxt(l.odds)}</li>`).join('')}</ul></div>`).join('');
 }
 
 function liveInput(){
@@ -281,7 +422,7 @@ async function apply(m,ch,msg){
  if(canWrite&&db){ch.updatedAt=new Date().toISOString();try{await db.doc('matches/'+m.id).update(ch);if(msg)await db.collection('events').add({at:new Date().toISOString(),matchId:m.id,text:msg,by:'page'})}catch(e){}}
 }
 
-renderRing();
+renderRing();renderSlip();
 (async()=>{
  const timer=setTimeout(()=>{if(!list().length)$('state').textContent='Kupongen kan inte nås just nu. Öppna sidan i Claude och var inloggad.'},10000);
  db=await claude.use('db');
@@ -290,6 +431,7 @@ renderRing();
  try{canWrite=!!(user&&await user.canEdit())}catch(e){}
  try{canPick=!!(user&&await user.can('data.write'))}catch(e){canPick=canWrite}
  db.collection('matches').onSnapshot(s=>{if(!s.metadata.fromCache)clearTimeout(timer);const next={};for(const d of s.docs)next[d.id]=Object.assign({id:d.id},d.data());matches=next;render();syncWatch()},err=>{clearTimeout(timer);$('state').textContent='Kupongen kunde inte läsas ('+err.code+').'});
+ db.collection('slips').orderBy('created','desc').limit(200).onSnapshot(s=>{bets=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderBets()},()=>{});
  db.collection('picks').onSnapshot(s=>{picks={};for(const d of s.docs)picks[d.id]=d.data().pick;render()},()=>{});
  db.collection('events').orderBy('at','desc').limit(60).onSnapshot(s=>{const local=events.filter(e=>e.local&&Date.now()-new Date(e.at)<12e4);events=s.docs.map(d=>d.data()).concat(local.filter(l=>!s.docs.some(d=>d.data().text===l.text)));renderFeed()},()=>{});
  sample=await claude.use('sample');render();
