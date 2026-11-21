@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tipsjakten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* VOICE: matchdagens tipskupong, saklig och spänd, som en resultattavla
+   IDEA: en ifylld tipskupong där Claudes kryss möter verkligheten rad för rad
+   PICTURE: kupongen själv: rader med 1 X 2-rutor, live-resultat och facit som stämpel
+   COLOUR and TYPE: planegrönt band, vitt papper, signalorange för live; Barlow Condensed + Inter
+   LAYOUT: grönt band med facit överst, kupongen under, händelseflöde vid sidan på bred skärm */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#0b1310);--ink:light-dark(#0f1f19,#e6efe9);--mute:light-dark(#5b6b64,#93a59c);
+--line:light-dark(#dfe6e2,#1f2e28);--paper:light-dark(#f4f7f5,#111c18);
+--pitch:#0d3a2b;--pitch2:#0a2e22;--chalk:#e8f3ec;--live:#ff5a2c;--hit:#1e9e57;--miss:#d9463e;--box:light-dark(#ffffff,#0e1814)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,.num,.big,.score,.bx{font-family:"Barlow Condensed",Inter,sans-serif}
+.band{padding:clamp(24px,4vw,56px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+header.band{background:var(--pitch);color:var(--chalk);position:relative;overflow:hidden}
+header .pitch{position:absolute;inset:0;width:100%;height:100%;opacity:.14;pointer-events:none}
+.kicker{font-size:15px;opacity:.8;margin:0 0 6px}
+h1{font-size:clamp(34px,5.4vw,52px);line-height:1.05;margin:0 0 18px;text-wrap:balance;font-weight:700}
+.top{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:clamp(20px,4vw,48px);position:relative}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{background:var(--pitch2);border-radius:10px;padding:12px 14px}
+.stat .big{font-size:clamp(30px,4vw,40px);line-height:1;font-weight:700;white-space:nowrap}
+.stat span{display:block;font-size:13px;opacity:.8;margin-top:4px}
+.vs{margin-top:12px;font-size:15px;opacity:.9}
+.rounds h2{font-size:22px;margin:0 0 10px;font-weight:600}
+.rb{display:grid;grid-template-columns:7.5em minmax(0,1fr) 3.2em;gap:8px;align-items:center;font-size:14px;margin:6px 0}
+.rb .tr{height:14px;background:var(--pitch2);border-radius:7px;overflow:hidden;display:flex}
+.rb .h{background:#5fd48f}.rb .m{background:#ef7a6e}
+.rb b{text-align:right;font-variant-numeric:tabular-nums}
+.empty{opacity:.75;font-size:15px}
+main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:32px;max-width:1240px;margin:0 auto}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px}
+.tabs button{flex:none}
+button{font:inherit;font-size:15px;min-height:44px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--box);color:var(--ink);cursor:pointer}
+button:focus-visible{outline:3px solid var(--live);outline-offset:2px}
+button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:disabled{opacity:.5;cursor:default}.bx:disabled{opacity:1}
+.coupon{border:2px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--paper)}
+.chead{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px;border-bottom:2px solid var(--ink);font-size:14px}
+.chead b{font-family:"Barlow Condensed";font-size:22px}
+.row{display:grid;grid-template-columns:2.2em minmax(0,1fr) 5.5em 9.6em;gap:10px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);position:relative}
+.row:last-child{border-bottom:0}
+.row .num{font-size:22px;font-weight:700;color:var(--mute)}
+.teams b{display:block;font-weight:600;line-height:1.3}
+.meta{font-size:13px;color:var(--mute);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pill{font-size:12px;font-weight:600;padding:1px 8px;border-radius:99px;background:var(--line);white-space:nowrap}
+.pill.live{background:var(--live);color:#fff;animation:pulse 1.6s infinite}
+.pill.hit{background:var(--hit);color:#fff}.pill.miss{background:var(--miss);color:#fff}
+@keyframes pulse{50%{opacity:.55}}
+@media(prefers-reduced-motion:reduce){.pill.live{animation:none}}
+.score{font-size:30px;font-weight:700;text-align:center;line-height:1;white-space:nowrap}
+.score small{display:block;font-size:13px;font-family:Inter;font-weight:500;color:var(--mute);margin-top:4px}
+.boxes{display:flex;gap:6px;justify-content:flex-end}
+.bx{width:44px;height:44px;padding:0;border:2px solid var(--ink);border-radius:6px;background:var(--box);font-size:19px;font-weight:600;position:relative;display:grid;place-items:center}
+.bx.c::after{content:"";position:absolute;inset:5px;background:linear-gradient(45deg,transparent 44%,var(--ink) 44% 56%,transparent 56%),linear-gradient(-45deg,transparent 44%,var(--ink) 44% 56%,transparent 56%);opacity:.9}
+.bx.u{box-shadow:inset 0 0 0 4px var(--live)}
+.bx .l{position:relative;z-index:1;background:var(--box);padding:0 2px;border-radius:3px;line-height:1}
+.bx.c .l{opacity:0}
+.row.hit{background:light-dark(#eaf7ef,#10261b)}.row.miss{background:light-dark(#fcecea,#2a1513)}
+.row.on .score{color:var(--live)}
+.chip{font-size:13px;font-weight:600;border:2px solid var(--ink);border-radius:6px;padding:2px 8px;white-space:nowrap}
+.conf{display:inline-flex;gap:3px;vertical-align:middle}.conf i{width:8px;height:8px;border-radius:2px;background:var(--line)}.conf i.f{background:var(--ink)}
+details{grid-column:2/-1;font-size:15px}
+summary{cursor:pointer;color:var(--mute);font-size:14px;min-height:28px;display:flex;align-items:center}
+.why{margin:6px 0 4px}
+.inj{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;font-size:14px;margin:8px 0}
+.inj h4{margin:0 0 2px;font-size:13px;color:var(--mute);font-weight:600}
+.inj ul{margin:0;padding-left:18px}
+.ask{margin-top:8px}.ans{margin-top:8px;padding:10px 12px;border-left:3px solid var(--live);background:var(--box);white-space:pre-wrap}
+aside h2,.sec h2{font-size:24px;margin:0 0 10px;font-weight:700}
+.feed{list-style:none;padding:0;margin:0;max-height:560px;overflow:auto}
+.feed li{padding:10px 0;border-bottom:1px solid var(--line);font-size:15px}
+.feed time{display:block;font-size:12px;color:var(--mute)}
+.ctl{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
+.note{font-size:13px;color:var(--mute)}
+.state{font-size:14px;color:var(--mute);margin:6px 0 16px;min-height:1.5em}
+.toasts{position:fixed;top:12px;right:12px;display:grid;gap:8px;z-index:9;max-width:min(360px,calc(100vw - 24px))}
+.toast{background:var(--ink);color:var(--bg);padding:12px 14px;border-radius:10px;border-left:6px solid var(--live);box-shadow:0 6px 24px rgba(0,0,0,.25);font-size:15px}
+.how{max-width:1240px;margin:0 auto;border-top:1px solid var(--line)}
+.how ol{padding-left:20px;max-width:70ch}
+@media(max-width:900px){main{grid-template-columns:minmax(0,1fr)}.top{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+.row{grid-template-columns:1.6em minmax(0,1fr) 4.6em;row-gap:8px}.boxes{grid-column:2/-1;justify-content:flex-start}
+.score{font-size:26px}details{grid-column:1/-1}.inj{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<header class="band">
+<svg class="pitch" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="3"><rect x="20" y="20" width="1160" height="360"/><line x1="600" y1="20" x2="600" y2="380"/><circle cx="600" cy="200" r="70"/><rect x="20" y="110" width="140" height="180"/><rect x="1040" y="110" width="140" height="180"/></g></svg>
+<div class="wrap top">
+<div>
+<p class="kicker">Tipsjakten · Claude tippar, verkligheten dömer</p>
+<h1 id="headline">Claudes facit laddas …</h1>
+<div class="stats" id="stats"></div>
+<p class="vs" id="vs"></p>
+</div>
+<div class="rounds"><h2>Rätt per omgång</h2><div id="rounds"><p class="empty">Inga avgjorda omgångar ännu.</p></div></div>
+</div>
+</header>
+
+<div class="band">
+<main>
+<section>
+<div class="tabs" id="tabs" role="tablist" aria-label="Omgångar"></div>
+<div class="state" id="state">Hämtar kupongen …</div>
+<div class="coupon" id="coupon" hidden></div>
+<p class="note">Kryss = Claudes tips. Orange ring = ditt eget tips (klicka på en ruta före avspark). Tips som inte är 1/X/2 visas som en etikett, t.ex. ”Ö2,5” eller ”BLGM” (båda lagen gör mål).</p>
+</section>
+<aside>
+<h2>Live</h2>
+<div class="ctl">
+<button id="liveBtn" aria-pressed="true">Live-uppdatering på</button>
+<button id="nowBtn">Uppdatera nu</button>
+<button id="soundBtn" aria-pressed="false">Ljud av</button>
+</div>
+<p class="note" id="liveNote">Resultat hämtas från ESPN via din Firecrawl-koppling var 2:a minut medan en match pågår och sidan är öppen.</p>
+<h2 style="margin-top:22px">Händelser</h2>
+<ul class="feed" id="feed"><li class="empty">Inga händelser ännu.</li></ul>
+</aside>
+</main>
+</div>
+
+<section class="band how">
+<h2 style="font-size:24px;margin:0 0 6px">Så fungerar det</h2>
+<ol>
+<li>Varje morgon letar Claude efter Premier League- och Champions League-matcher de närmaste dagarna, läser skadelistor och lägger tips här, med motivering och säkerhet 1–5.</li>
+<li>Under matchdagar kollar Claude resultaten varje timme och skickar en notis till din telefon vid mål och slutresultat. Med sidan öppen uppdateras allt live.</li>
+<li>Facit räknas automatiskt. ”Pass” betyder att Claude avstod; de räknas inte.</li>
+</ol>
+<p class="note">Tips är underhållning, inte garantier. Spela bara för pengar du har råd att förlora. Stödlinjen: stodlinjen.se, 020-81 91 00.</p>
+</section>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TZ='Europe/Stockholm';
+const fmtK=iso=>{try{return new Intl.DateTimeFormat('sv-SE',{timeZone:TZ,weekday:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(iso))}catch(e){return iso}};
+const fmtT=iso=>{try{return new Intl.DateTimeFormat('sv-SE',{timeZone:TZ,weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(iso))}catch(e){return iso}};
+const espnDay=iso=>{const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(iso));return p.replace(/-/g,'')};
+const TIPLBL={'1':'1','X':'X','2':'2','1X':'1X','X2':'X2','12':'12','O2.5':'Ö2,5','U2.5':'U2,5','BTTS':'BLGM','PASS':'Pass'};
+function grade(tip,h,a){if(h==null||a==null)return null;switch(tip){case'1':return h>a;case'X':return h===a;case'2':return a>h;case'1X':return h>=a;case'X2':return a>=h;case'12':return h!==a;case'O2.5':return h+a>=3;case'U2.5':return h+a<=2;case'BTTS':return h>0&&a>0;default:return null}}
+const marks=tip=>({'1':['1'],'X':['X'],'2':['2'],'1X':['1','X'],'X2':['X','2'],'12':['1','2']}[tip]||[]);
+
+let matches={},picks={},events=[],round=null,db=null,user=null,canWrite=false,mcp=null,sample=null;
+let liveOn=true,sound=false,unwatch=null,watchKey='',lastLive=null,answers={};
+
+function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;$('toasts').prepend(el);setTimeout(()=>el.remove(),9000);if(sound)beep()}
+let actx=null;function beep(){try{actx=actx||new AudioContext();const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=880;g.gain.setValueAtTime(.15,actx.currentTime);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+.5);o.connect(g).connect(actx.destination);o.start();o.stop(actx.currentTime+.5)}catch(e){}}
+
+function list(){return Object.values(matches)}
+function decided(m){return m.tip&&m.tip!=='PASS'&&m.status==='post'&&grade(m.tip,m.hs,m.as)!==null}
+function render(){renderStats();renderTabs();renderCoupon();renderFeed()}
+
+function renderStats(){
+ const d=list().filter(decided),hits=d.filter(m=>grade(m.tip,m.hs,m.as)).length;
+ const live=list().filter(m=>m.status==='in').length,pend=list().filter(m=>m.tip&&m.tip!=='PASS'&&m.status!=='post').length;
+ const pct=d.length?Math.round(100*hits/d.length):null;
+ $('headline').textContent=d.length?`Claude har ${hits} rätt av ${d.length} avgjorda tips`:(list().length?'Första tipsen är lagda – facit kommer efter slutsignalen':'Inga tips lagda ännu');
+ $('stats').innerHTML=[[pct==null?'–':pct+' %','träffprocent'],[hits+' / '+(d.length-hits),'rätt / fel'],[live,'pågår nu'],[pend,'väntar på facit']].map(([b,s])=>`<div class="stat"><div class="big">${b}</div><span>${s}</span></div>`).join('');
+ const mine=list().filter(m=>m.status==='post'&&picks[m.id]&&m.hs!=null);
+ if(mine.length){const u=mine.filter(m=>grade(picks[m.id],m.hs,m.as)).length;const c=mine.filter(m=>decided(m)&&grade(m.tip,m.hs,m.as)).length;$('vs').textContent=`Du mot Claude på samma matcher: du ${u} rätt, Claude ${c} rätt av ${mine.length}.`}else $('vs').textContent='Lägg egna tips på kupongen så räknas du mot Claude.';
+ const rs={};for(const m of d){const r=rs[m.round]||(rs[m.round]={label:m.roundLabel||m.round,h:0,n:0});r.n++;if(grade(m.tip,m.hs,m.as))r.h++}
+ const keys=Object.keys(rs).sort().slice(-10);
+ if(keys.length)$('rounds').innerHTML=keys.map(k=>{const r=rs[k];return`<div class="rb"><span>${esc(r.label.split('·')[0].trim())}</span><div class="tr"><i class="h" style="width:${100*r.h/r.n}%"></i><i class="m" style="width:${100*(r.n-r.h)/r.n}%"></i></div><b>${r.h}/${r.n}</b></div>`}).join('');
+}
+function rounds(){const r={};for(const m of list()){if(!r[m.round])r[m.round]={key:m.round,label:m.roundLabel||m.round,first:m.kickoff};if(m.kickoff<r[m.round].first)r[m.round].first=m.kickoff}return Object.values(r).sort((a,b)=>b.key.localeCompare(a.key))}
+function renderTabs(){
+ const rs=rounds();
+ if(!round||!rs.find(r=>r.key===round)){const now=Date.now();const act=list().filter(m=>m.status!=='post'&&new Date(m.kickoff).getTime()>now-3*36e5).sort((a,b)=>a.kickoff.localeCompare(b.kickoff))[0];round=act?act.round:(rs[0]&&rs[0].key)}
+ $('tabs').innerHTML=rs.map(r=>`<button role="tab" aria-pressed="${r.key===round}" data-r="${esc(r.key)}">${esc(r.label)}</button>`).join('');
+}
+function boxHtml(m,k){const c=marks(m.tip).includes(k),u=picks[m.id]===k,lock=Date.now()>=new Date(m.kickoff).getTime()||!canPick;return`<button class="bx${c?' c':''}${u?' u':''}" data-pick="${k}" data-id="${esc(m.id)}" ${lock?'disabled':''} aria-label="${k}${c?', Claudes tips':''}${u?', ditt tips':''}"><span class="l">${k}</span></button>`}
+let canPick=false;
+function renderCoupon(){
+ const rows=list().filter(m=>m.round===round).sort((a,b)=>a.kickoff.localeCompare(b.kickoff)||a.home.localeCompare(b.home));
+ if(!rows.length){$('coupon').hidden=true;$('state').textContent=db?'Inga matcher i den här omgången ännu. Nya tips läggs varje morgon.':$('state').textContent;return}
+ $('coupon').hidden=false;$('state').textContent='';
+ const d=rows.filter(decided),h=d.filter(m=>grade(m.tip,m.hs,m.as)).length;
+ $('coupon').innerHTML=`<div class="chead"><b>${esc(rows[0].roundLabel||round)}</b><span>${d.length?`${h} rätt av ${d.length} avgjorda`:'Inga avgjorda ännu'} · ${rows.filter(m=>m.tip!=='PASS').length} tips, ${rows.filter(m=>m.tip==='PASS').length} pass</span></div>`+rows.map((m,i)=>{
+  const g=grade(m.tip,m.hs,m.as),cls=m.status==='post'&&g!==null?(g?'hit':'miss'):(m.status==='in'?'on':'');
+  const pill=m.status==='void'?'<span class="pill">Uppskjuten</span>':m.status==='in'?`<span class="pill live">LIVE ${esc(m.clock||'')}</span>`:m.status==='post'?(m.tip==='PASS'?'<span class="pill">Slut · pass</span>':`<span class="pill ${g?'hit':'miss'}">${g?'Rätt':'Fel'}</span>`):`<span class="pill">${esc(fmtK(m.kickoff))}</span>`;
+  const now=m.status==='in'&&g!==null&&m.tip!=='PASS'?`<span>${g?'Går in just nu':'Går inte in just nu'}</span>`:'';
+  const chip=['O2.5','U2.5','BTTS','PASS'].includes(m.tip)?`<span class="chip">${TIPLBL[m.tip]}</span>`:'';
+  const conf=m.tip!=='PASS'?`<span class="conf" title="Säkerhet ${m.confidence||0} av 5">${[1,2,3,4,5].map(n=>`<i class="${n<=(m.confidence||0)?'f':''}"></i>`).join('')}</span>`:'';
+  const li=a=>a&&a.length?`<ul>${a.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p style="margin:0">Inga kända frånvarande.</p>';
+  return`<article class="row ${cls}"><div class="num">${i+1}</div><div class="teams"><b>${esc(m.home)}</b><b>${esc(m.away)}</b><div class="meta">${pill}<span>${esc(m.league||'')}</span>${chip}${conf}${now}</div></div><div class="score">${m.hs==null?'–':m.hs+'–'+m.as}<small>${m.status==='post'?'slut':m.status==='in'?esc(m.clock||''):''}</small></div><div class="boxes">${['1','X','2'].map(k=>boxHtml(m,k)).join('')}</div>
+  <details${answers[m.id]?' open':''}><summary>Motivering och skador</summary><p class="why"><b>${esc(m.tipText||TIPLBL[m.tip]||'')}</b>${m.tipText?'. ':''}${esc(m.reason||'')}</p><div class="inj"><div><h4>${esc(m.home)} saknar</h4>${li(m.injHome)}</div><div><h4>${esc(m.away)} saknar</h4>${li(m.injAway)}</div></div>${m.tippedAt?`<p class="note">Tipset lades ${esc(fmtT(m.tippedAt))}.</p>`:''}${sample?`<div class="ask"><button data-ask="${esc(m.id)}">${m.status==='in'?'Claudes läge just nu':m.status==='post'?'Claudes efteranalys':'Fråga Claude om matchen'}</button></div>`:''}${answers[m.id]?`<div class="ans">${esc(answers[m.id])}</div>`:''}</details></article>`}).join('');
+}
+function renderFeed(){
+ const ev=[...events].sort((a,b)=>String(b.at).localeCompare(String(a.at))).slice(0,40);
+ $('feed').innerHTML=ev.length?ev.map(e=>`<li><time>${esc(fmtT(e.at))}</time>${esc(e.text)}</li>`).join(''):'<li class="empty">Inga händelser ännu.</li>';
+}
+
+document.addEventListener('click',async e=>{
+ const t=e.target.closest('button');if(!t)return;
+ if(t.dataset.r){round=t.dataset.r;render();return}
+ if(t.dataset.pick&&db){const id=t.dataset.id,k=t.dataset.pick,ref=db.doc('picks/'+id);try{if(picks[id]===k){delete picks[id];render();await ref.delete()}else{picks[id]=k;render();await ref.set({pick:k,at:new Date().toISOString()})}}catch(err){toast('Kunde inte spara ditt tips.')}return}
+ if(t.dataset.ask)return ask(t.dataset.ask,t);
+});
+$('liveBtn').onclick=()=>{liveOn=!liveOn;$('liveBtn').setAttribute('aria-pressed',liveOn);$('liveBtn').textContent=liveOn?'Live-uppdatering på':'Live-uppdatering av';syncWatch(true)};
+$('soundBtn').onclick=()=>{sound=!sound;$('soundBtn').setAttribute('aria-pressed',sound);$('soundBtn').textContent=sound?'Ljud på':'Ljud av';if(sound)beep()};
+$('nowBtn').onclick=async()=>{const inp=liveInput(true);if(!mcp){toast('Live-data kräver Firecrawl-kopplingen.');return}if(!inp){toast('Inga matcher att uppdatera just nu.');return}$('nowBtn').disabled=true;try{const r=await mcp.callTool('Firecrawl','alexandria_library_read',inp,{cache:false});onScores(r)}catch(err){liveErr(err)}$('nowBtn').disabled=false};
+
+async function ask(id,btn){
+ const m=matches[id];if(!m||!sample)return;btn.disabled=true;answers[id]='Tänker …';render();
+ const ctx={match:`${m.home}–${m.away}`,liga:m.league,avspark:fmtT(m.kickoff),status:m.status,minut:m.clock,resultat:m.hs==null?null:`${m.hs}-${m.as}`,claudesTips:TIPLBL[m.tip],motivering:m.reason,saknas_hemma:m.injHome,saknas_borta:m.injAway,användarensTips:picks[id]||null};
+ const q=`Du är Claude och har lagt fotbollstipset nedan. Svara på svenska, högst 90 ord, utan rubriker. ${m.status==='in'?'Matchen pågår: bedöm hur tipset ser ut just nu och vad som behöver hända.':m.status==='post'?'Matchen är slut: gör en ärlig efteranalys av varför tipset gick in eller inte.':'Förklara kort hur du tänker och vad som är största risken med tipset.'} Hitta inte på händelser som inte står i datan.\n\nData: ${JSON.stringify(ctx)}`;
+ try{const r=await sample(q,{cache:false,onText:({text})=>{answers[id]=text;const el=document.querySelector(`[data-ask="${CSS.escape(id)}"]`)?.closest('details')?.querySelector('.ans');if(el)el.textContent=text}});answers[id]=r.text}catch(err){answers[id]=err&&err.code==='not_granted'?'Claude-frågor är inte tillgängliga i den här vyn.':'Claude kunde inte svara just nu. Försök igen om en stund.'}
+ render();
+}
+
+function liveInput(force){
+ const now=Date.now(),keys=new Set();
+ for(const m of list()){const k=new Date(m.kickoff).getTime();if(m.status!=='post'&&now>=k-10*6e4&&now<=k+170*6e4)keys.add((m.leagueSlug||'eng.1')+'|'+espnDay(m.kickoff))}
+ if(!keys.size)return null;
+ return{calls:[...keys].sort().slice(0,10).map(k=>{const[l,d]=k.split('|');return{provider:'espn-com',capability:'sports-data/scoreboard',options:{date:d,league:l,sport:'soccer'}}}),objective:'Följa live-resultat för tippade fotbollsmatcher i Tipsjakten.'};
+}
+function syncWatch(force){
+ if(!mcp)return;const inp=liveOn?liveInput():null,key=inp?JSON.stringify(inp.calls):'';
+ if(key===watchKey&&!force)return;watchKey=key;if(unwatch){unwatch();unwatch=null}
+ if(!inp){$('liveNote').textContent=liveOn?'Ingen match pågår just nu. Live-läget startar av sig självt strax före avspark.':'Live-uppdatering avstängd.';return}
+ $('liveNote').textContent='Följer '+inp.calls.length+' liga/dag live, uppdateras var 2:a minut.';
+ unwatch=mcp.watchTool('Firecrawl','alexandria_library_read',inp,ev=>{if(ev.type==='data')onScores(ev.result);else liveErr(ev.error)},{refetchInterval:120000,cache:{staleTime:60000,gcTime:600000}});
+}
+function liveErr(err){const c=err&&err.code;$('liveNote').textContent=c==='server_not_connected'?'Lägg till Firecrawl under claude.ai → Inställningar → Kopplingar för live-resultat.':c==='needs_reauth'?'Anslut Firecrawl på nytt under claude.ai → Inställningar → Kopplingar.':c==='approval_required'||c==='not_in_manifest'?'Live-resultat kräver att du godkänner Firecrawl för sidan. Klicka ”Uppdatera nu”.':'Live-resultat kunde inte hämtas just nu ('+(c||'fel')+'). Försöker igen vid nästa uppdatering.'}
+async function onScores(res){
+ let p=res&&res.payload;if(typeof p==='string'){try{p=JSON.parse(p)}catch(e){p=null}}
+ const arr=(p&&p.data&&p.data.alexandria)||(p&&p.alexandria)||[];let n=0;
+ for(const r of arr){const evs=(r&&r.data&&r.data.events)||[];for(const ev of evs){const m=matches[ev.event_id];if(!m)continue;n++;
+  const H=(ev.competitors||[]).find(c=>c.home_away==='home'),A=(ev.competitors||[]).find(c=>c.home_away==='away');
+  const st=ev.status||{},state=st.state==='in'?'in':st.state==='post'?'post':'pre';
+  if(/POSTPONED|CANCELED|ABANDONED/.test(st.name||'')){if(m.status!=='void')await apply(m,{status:'void',clock:'uppskjuten'},`${m.home}–${m.away} är uppskjuten.`);continue}
+  const hs=H&&H.score_value!=null?H.score_value:null,as=A&&A.score_value!=null?A.score_value:null,clock=st.short_detail||st.display_clock||'';
+  if(state==='pre'&&m.status==='pre')continue;
+  const ch={};if(state!==m.status)ch.status=state;if(hs!==m.hs)ch.hs=hs;if(as!==m.as)ch.as=as;if(clock!==m.clock)ch.clock=clock;
+  if(!Object.keys(ch).length)continue;
+  let msg=null;const sc=`${m.home} ${hs}–${as} ${m.away}`;
+  if(state==='post'&&m.status!=='post'){const g=grade(m.tip,hs,as);msg=`Slut: ${sc}. `+(m.tip==='PASS'?'Claude passade.':g?`Claudes tips ${TIPLBL[m.tip]} gick in ✓`:`Claudes tips ${TIPLBL[m.tip]} gick inte in ✗`);if(m.tip!=='PASS')ch.result=g?'hit':'miss'}
+  else if(state==='in'&&m.status==='pre')msg=`Avspark: ${m.home}–${m.away}.`;
+  else if((hs!==m.hs||as!==m.as)&&m.hs!=null)msg=`MÅL! ${sc} (${clock}).`+(m.tip!=='PASS'?` Tipset ${TIPLBL[m.tip]} ${grade(m.tip,hs,as)?'går in':'går inte in'} just nu.`:'');
+  await apply(m,ch,msg)}}
+ lastLive=Date.now();if(liveOn&&unwatch)$('liveNote').textContent=`Live · senast uppdaterad ${new Intl.DateTimeFormat('sv-SE',{timeZone:TZ,hour:'2-digit',minute:'2-digit'}).format(new Date())} · var 2:a minut.`;
+ render();syncWatch();
+}
+async function apply(m,ch,msg){
+ Object.assign(m,ch);if(msg){toast(msg);events.push({at:new Date().toISOString(),text:msg,local:true})}
+ if(canWrite&&db){ch.updatedAt=new Date().toISOString();try{await db.doc('matches/'+m.id).update(ch);if(msg)await db.collection('events').add({at:new Date().toISOString(),matchId:m.id,text:msg,by:'page'})}catch(e){}}
+}
+
+(async()=>{
+ const timer=setTimeout(()=>{if(!Object.keys(matches).length)$('state').textContent='Kupongen kan inte nås just nu. Öppna sidan i Claude och var inloggad.'},10000);
+ db=await claude.use('db');
+ if(!db){clearTimeout(timer);$('state').textContent='Kupongen kräver att du är inloggad på claude.ai.';return}
+ user=await claude.use('user');
+ try{canWrite=!!(user&&await user.canEdit())}catch(e){}
+ try{canPick=!!(user&&await user.can('data.write'))}catch(e){canPick=canWrite}
+ db.collection('matches').onSnapshot(s=>{if(!s.metadata.fromCache)clearTimeout(timer);const next={};for(const d of s.docs)next[d.id]=Object.assign({id:d.id},d.data());matches=next;render();syncWatch()},err=>{clearTimeout(timer);$('state').textContent='Kupongen kunde inte läsas ('+err.code+').'});
+ db.collection('picks').onSnapshot(s=>{picks={};for(const d of s.docs)picks[d.id]=d.data().pick;render()},()=>{});
+ db.collection('events').orderBy('at','desc').limit(60).onSnapshot(s=>{const local=events.filter(e=>e.local&&Date.now()-new Date(e.at)<12e4);events=s.docs.map(d=>d.data()).concat(local.filter(l=>!s.docs.some(d=>d.data().text===l.text)));renderFeed()},()=>{});
+ sample=await claude.use('sample');render();
+ mcp=await claude.use('mcp');
+ if(!mcp)$('liveNote').textContent='Live-resultat är inte tillgängliga i den här vyn. Resultaten uppdateras ändå varje timme av Claude.';
+ syncWatch(true);setInterval(()=>syncWatch(),60000);
+})();
+}
+</script>
+</body>
+</html>
