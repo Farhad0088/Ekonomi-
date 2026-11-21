@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tipsjakten</title>
+<title>Floodlight</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
 <style>
@@ -27,7 +27,7 @@ background:repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 1px,transpare
 transform:perspective(420px) rotateX(62deg);transform-origin:bottom;-webkit-mask-image:linear-gradient(to top,#000,transparent);mask-image:linear-gradient(to top,#000,transparent)}
 .top{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:clamp(20px,4vw,56px);align-items:center;position:relative;z-index:1}
 .brand{display:flex;align-items:center;gap:10px;font-family:"Chakra Petch";font-weight:600;font-size:17px;color:var(--mute);margin:0 0 14px}
-.brand i{width:10px;height:10px;border-radius:50%;background:var(--hot);box-shadow:0 0 14px var(--hot)}
+.brand .logo{width:34px;height:34px;flex:none;filter:drop-shadow(0 0 10px rgba(255,90,31,.45))}.brand .wm{font-size:22px;font-weight:700;color:var(--ink);background:var(--chrome);-webkit-background-clip:text;background-clip:text;color:transparent}.brand .sub{font-size:15px;color:var(--mute);font-family:Inter;font-weight:500;padding-left:10px;border-left:1px solid var(--edge)}
 h1{font-size:clamp(34px,5.2vw,52px);line-height:1.05;margin:0 0 20px;text-wrap:balance;font-weight:700;background:var(--chrome);-webkit-background-clip:text;background-clip:text;color:transparent}
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .stat{background:var(--glass);border:1px solid var(--edge);border-radius:14px;padding:12px 14px;backdrop-filter:blur(10px)}
@@ -143,7 +143,7 @@ aside .panel{background:var(--glass);border:1px solid var(--edge);border-radius:
 <section class="hero"><div class="wrap">
 <div class="top">
 <div>
-<p class="brand"><i></i>Tipsjakten · matchkväll med Claude</p>
+<p class="brand"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#8b97a5"/></linearGradient><linearGradient id="beam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff5a1f" stop-opacity=".9"/><stop offset="1" stop-color="#ff5a1f" stop-opacity="0"/></linearGradient></defs><path d="M7 15 L1 39 H39 L33 15 Z" fill="url(#beam)" opacity=".55"/><rect x="6" y="2" width="28" height="14" rx="3" fill="url(#lg)"/><g fill="#07090c"><circle cx="12" cy="7" r="2.2"/><circle cx="20" cy="7" r="2.2"/><circle cx="28" cy="7" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="20" cy="12" r="2.2"/><circle cx="28" cy="12" r="2.2"/></g><g fill="#ff5a1f"><circle cx="20" cy="7" r="1.2"/></g></svg><span class="wm">Floodlight</span><span class="sub">matchkväll med Claude</span></p>
 <h1 id="headline">Claudes facit laddas …</h1>
 <div class="stats" id="stats"></div>
 <p class="vs" id="vs"></p>
@@ -179,7 +179,7 @@ aside .panel{background:var(--glass);border:1px solid var(--edge);border-radius:
 <div class="money" style="margin-top:6px"><label for="budget">Min spelbudget per månad</label><input id="budget" type="number" inputmode="decimal" min="0" step="50" placeholder="t.ex. 1000"><span>kr</span></div>
 <div id="advice"></div></details>
 <button class="primary" id="saveSlip">Spara spelet och följ det</button>
-<p class="note">Sidan lägger inga spel hos något spelbolag. Spelet sparas här så att Tipsjakten räknar din vinst eller förlust. Oddsen är riktodds från DraftKings via ESPN; skriv in ditt spelbolags odds för exakt vinst.</p>
+<p class="note">Sidan lägger inga spel hos något spelbolag. Spelet sparas här så att Floodlight räknar din vinst eller förlust. Oddsen är riktodds från DraftKings via ESPN; skriv in ditt spelbolags odds för exakt vinst.</p>
 </div>
 <div class="panel" id="mybets"><h2>Mina spel</h2><div class="sum" id="betsum"></div><div id="betlist"><p class="note">Inga sparade spel ännu.</p></div></div>
 <div class="panel">
@@ -388,7 +388,7 @@ function liveInput(){
  const now=Date.now(),keys=new Set();
  for(const m of list()){const k=new Date(m.kickoff).getTime();if(m.status!=='post'&&m.status!=='void'&&now>=k-10*6e4&&now<=k+170*6e4)keys.add((m.leagueSlug||'eng.1')+'|'+espnDay(m.kickoff))}
  if(!keys.size)return null;
- return{calls:[...keys].sort().slice(0,10).map(k=>{const[l,d]=k.split('|');return{provider:'espn-com',capability:'sports-data/scoreboard',options:{date:d,league:l,sport:'soccer'}}}),objective:'Följa live-resultat för tippade fotbollsmatcher i Tipsjakten.'};
+ return{calls:[...keys].sort().slice(0,10).map(k=>{const[l,d]=k.split('|');return{provider:'espn-com',capability:'sports-data/scoreboard',options:{date:d,league:l,sport:'soccer'}}}),objective:'Följa live-resultat för tippade fotbollsmatcher i Floodlight.'};
 }
 function syncWatch(force){
  if(!mcp)return;const inp=liveOn?liveInput():null,key=inp?JSON.stringify(inp.calls):'';
