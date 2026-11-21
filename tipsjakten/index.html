@@ -184,26 +184,27 @@ aside .panel{background:var(--glass);border:1px solid var(--edge);border-radius:
 <aside>
 <div class="panel slip" id="kupong">
 <h2>Spelkupong<span id="slipcount"></span></h2>
-<p class="note" style="margin:0">Välj hur många av Claudes tips du vill spela, ändra val och odds om du vill, och se vad vinsten blir.</p>
+<p class="note" style="margin:0">Fyll i insatsen en gång. Välj sedan antal matcher, eller låt Claude hitta spel för den vinst du vill ha.</p>
+<div class="lbl">1. Din insats</div>
+<div class="money"><label for="stake" id="stakelbl">Insats</label><input id="stake" type="number" inputmode="decimal" min="1" step="1" value="100"><span>kr</span></div>
+<div class="chips2" id="chips"></div>
+<div class="lbl">2. Välj spel</div>
 <div class="goal" id="goal"><div class="lbl">Bygg kupong efter önskad vinst</div>
-<div class="money"><label for="goalStake">Total insats</label><input id="goalStake" type="number" inputmode="decimal" min="1" step="10" value="1000"><span>kr</span></div>
 <div class="money"><label for="goalLo">Vill få tillbaka</label><input id="goalLo" type="number" inputmode="decimal" min="1" step="100" value="3000" aria-label="Från"><span>–</span><input id="goalHi" type="number" inputmode="decimal" min="1" step="100" value="5000" aria-label="Till"><span>kr</span></div>
 <p class="note" id="goalMul" style="margin:4px 0 0"></p>
 <button id="goalBtn">Låt Claude hitta spelen</button>
 <p class="note" id="goalNote">Sidan väljer bland Claudes tips (och skarpare varianter, t.ex. 2 i stället för X2) den kombination som når beloppet med störst chans enligt oddsen.</p></div>
-<div class="lbl">Antal matcher</div>
+<div class="lbl">… eller välj antal matcher</div>
 <div class="nums" id="nums"></div>
 <div class="seg2"><button data-mode="kombi" aria-pressed="true">Kombination</button><button data-mode="single" aria-pressed="false">Singlar</button></div>
 <p class="note" id="modehelp" style="margin:6px 0 0"></p>
 <div class="legs" id="legs"></div>
-<div class="money"><label for="stake" id="stakelbl">Insats</label><input id="stake" type="number" inputmode="decimal" min="1" step="1" value="100"><span>kr</span></div>
-<div class="chips2" id="chips"></div>
 <div id="calc"></div>
 <details class="budget" id="budgetBox"><summary>Hur mycket kan jag satsa?</summary>
 <div class="money" style="margin-top:6px"><label for="budget">Min spelbudget per månad</label><input id="budget" type="number" inputmode="decimal" min="0" step="50" placeholder="t.ex. 1000"><span>kr</span></div>
 <div id="advice"></div></details>
-<button class="primary" id="saveSlip">Spara spelet och följ det</button>
-<p class="note">Sidan lägger inga spel hos något spelbolag. Spelet sparas här så att Floodlight räknar din vinst eller förlust. Oddsen är riktodds från DraftKings via ESPN; skriv in ditt spelbolags odds för exakt vinst.</p>
+<button class="primary" id="saveSlip">Lägg spelet</button>
+<p class="note">Sidan lägger inga spel hos något spelbolag. ”Lägg spelet” sparar det i Floodlight, som sedan följer och räknar din vinst eller förlust. Oddsen är riktodds från DraftKings via ESPN; skriv in ditt spelbolags odds för exakt vinst.</p>
 </div>
 <div class="panel" id="mybets"><h2>Mina spel</h2><div class="sum" id="betsum"></div><div id="betlist"><p class="note">Inga sparade spel ännu.</p></div></div>
 <div class="panel">
@@ -352,12 +353,12 @@ function calcSlip(){const ids=legIds(),stake=Math.max(0,Number(slip.stake)||0);l
 function adviceFor(){if(!budget)return null;const k=slip.mode==='kombi'?0.01:0.02;return Math.max(10,Math.round(budget*k/10)*10)}
 function renderSlip(){
  const n=legIds().length;$('slipcount').textContent=n?`${n} ${n===1?'match':'matcher'}`:'';
- const el=eligible().length;$('nums').innerHTML=Array.from({length:10},(_,i)=>i+1).map(k=>`<button data-n="${k}" aria-pressed="${n===k}" ${k>el?'disabled':''}>${k}</button>`).join('');
+ const el=eligible().length,nb=$('nums');if(nb.children.length!==10)nb.innerHTML=Array.from({length:10},(_,i)=>`<button data-n="${i+1}">${i+1}</button>`).join('');[...nb.children].forEach((b,i)=>{b.setAttribute('aria-pressed',n===i+1);b.disabled=i+1>el});
  document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===slip.mode));
  $('modehelp').textContent=slip.mode==='kombi'?'Ett spel där alla matcher måste gå in. Oddsen multipliceras, så vinsten blir stor men risken hög.':'Ett spel per match med samma insats. Varje rätt match ger vinst för sig.';
  $('stakelbl').textContent=slip.mode==='kombi'?'Insats':'Insats per match';
- if(document.activeElement!==$('stake'))$('stake').value=slip.stake;
- const adv=adviceFor();$('chips').innerHTML=[10,50,100,200].map(v=>`<button data-stake="${v}">${v} kr</button>`).join('')+(adv?`<button data-stake="${adv}">Förslag ${adv} kr</button>`:'');
+ if(document.activeElement!==$('stake')&&num($('stake').value)!==slip.stake){$('stake').value=slip.stake;if(typeof syncGoal==='function')syncGoal()}
+ const adv=adviceFor(),chipKey=String(adv);if($('chips').dataset.k!==chipKey){$('chips').dataset.k=chipKey;$('chips').innerHTML=[10,50,100,200].map(v=>`<button data-stake="${v}">${v} kr</button>`).join('')+(adv?`<button data-stake="${adv}">Förslag ${adv} kr</button>`:'')}
  if(!n){$('legs').innerHTML=`<p class="note">${el?'Välj antal matcher ovan, eller tryck ”+ Kupong” på ett matchkort.':'Inga kommande tips att spela just nu. Nya tips kommer varje morgon.'}</p>`;$('calc').innerHTML='';$('saveSlip').disabled=true;renderMine();renderAdvice();return}
  const c=calcSlip();
  $('legs').innerHTML=c.rows.map(r=>{const l=slip.legs[r.id],m=r.m,locked=!open(m);return`<div class="leg${!r.od||locked?' bad':''}"><div class="nm">${esc(m.home)}–${esc(m.away)}<small>${esc(fmtK(m.kickoff))}${l.pick===m.tip?' · Claudes tips':' · eget val'}${r.p?` · ≈${Math.round(r.p*100)} %`:''}${locked?' · har startat':''}</small></div>
@@ -371,15 +372,16 @@ function renderSlip(){
  if(budget&&c.total>budget*0.1)h+=`<p class="warn">Insatsen är över 10 % av din månadsbudget (${kr(budget)}). Överväg en lägre insats.</p>`;
  $('calc').innerHTML=h;$('saveSlip').disabled=c.miss||c.rows.some(r=>!open(r.m))||!(c.stake>0)||!db;
  $('slipbar').hidden=false;$('slipbar').href='#kupong';$('slipbar').innerHTML=`<span>Kupong · ${n} ${n===1?'match':'matcher'} · ${slip.mode==='kombi'?'odds '+(c.miss?'–':oddsTxt(c.odds)):'singlar'}</span><b>${c.miss?'–':kr(c.payout)}</b>`;
- renderAdvice();
+ renderMine();renderAdvice();
 }
 /* ---------- Målvinst: hitta kombination ---------- */
 const num=v=>parseFloat(String(v).replace(',','.'));
-let goal=ls.get('tj-goal',null);if(goal){$('goalStake').value=goal.stake;$('goalLo').value=goal.lo;$('goalHi').value=goal.hi}
-let gm={lo:3,hi:5};const gStake=()=>num($('goalStake').value);
-function goalMul(){const s=gStake(),a=num($('goalLo').value),b=num($('goalHi').value);if(s>0){if(a>0)gm.lo=a/s;if(b>0)gm.hi=b/s}$('goalMul').textContent=s>0&&a>0&&b>0?`= ${String(Math.round(a/s*10)/10).replace('.',',')}–${String(Math.round(b/s*10)/10).replace('.',',')} gånger insatsen`:''}
-goalMul();
-$('goalStake').addEventListener('input',()=>{const s=gStake();if(s>0){$('goalLo').value=Math.round(s*gm.lo);$('goalHi').value=Math.round(s*gm.hi)}goalMul()});
+let gm=ls.get('tj-goalmul',{lo:3,hi:5});
+const gStake=()=>num($('stake').value);
+function goalMul(){const s=gStake(),a=num($('goalLo').value),b=num($('goalHi').value);if(s>0&&a>0&&b>0){gm={lo:a/s,hi:b/s};ls.set('tj-goalmul',gm)}$('goalMul').textContent=s>0&&a>0&&b>0?`= ${String(Math.round(a/s*10)/10).replace('.',',')}–${String(Math.round(b/s*10)/10).replace('.',',')} gånger insatsen`:''}
+function syncGoal(){const s=gStake();if(s>0){$('goalLo').value=Math.round(s*gm.lo);$('goalHi').value=Math.round(s*gm.hi);$('goalMul').textContent=`= ${String(Math.round(gm.lo*10)/10).replace('.',',')}–${String(Math.round(gm.hi*10)/10).replace('.',',')} gånger insatsen`}}
+syncGoal();
+$('stake').addEventListener('input',syncGoal);
 $('goalLo').addEventListener('input',goalMul);$('goalHi').addEventListener('input',goalMul);
 function findGoal(stake,lo,hi){
  const VAR={'1':['1'],'X':['X'],'2':['2'],'1X':['1X','1'],'X2':['X2','2'],'12':['12','1','2'],'O2.5':['O2.5'],'U2.5':['U2.5']};
@@ -394,7 +396,7 @@ function findGoal(stake,lo,hi){
   else{const d=pay<lo?Math.log(lo/pay):Math.log(pay/hi);if(!near||d<near.d-1e-9||(Math.abs(d-near.d)<1e-9&&c.s>near.s))near={...c,d}}}
  return best?{...best,ok:true}:near?{...near,ok:false}:null}
 $('goalBtn').onclick=()=>{
- const stake=num($('goalStake').value),lo=num($('goalLo').value),hi=num($('goalHi').value);
+ const stake=num($('stake').value),lo=num($('goalLo').value),hi=num($('goalHi').value);
  if(!(stake>0)||!(lo>stake)||!(hi>=lo)){$('goalNote').textContent='Fyll i en insats och ett belopp att få tillbaka som är större än insatsen (från ≤ till).';return}
  ls.set('tj-goal',{stake,lo,hi});
  const r=findGoal(stake,lo,hi);
@@ -418,6 +420,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
  if(t.dataset.legdel){toggleLeg(t.dataset.legdel);return}
  if(t.dataset.slip){toggleLeg(t.dataset.slip);return}
  if(t.dataset.delbet){delBet(t.dataset.delbet,t);return}
+ if(t.dataset.save){$('saveSlip').click();return}
 });
 document.addEventListener('change',e=>{const t=e.target;
  if(t.dataset.legpick){slip.legs[t.dataset.legpick].pick=t.value;slip.legs[t.dataset.legpick].odds=null;saveDraft();renderSlip()}
@@ -427,7 +430,7 @@ document.addEventListener('change',e=>{const t=e.target;
 });
 $('saveSlip').onclick=async()=>{const c=calcSlip();if(!db||c.miss||!c.ids.length)return;$('saveSlip').disabled=true;
  const legs=c.rows.map(r=>({matchId:r.id,home:r.m.home,away:r.m.away,kickoff:r.m.kickoff,pick:slip.legs[r.id].pick,odds:r.od,claude:r.m.tip}));
- try{await db.collection('slips').add({created:new Date().toISOString(),mode:slip.mode,stake:c.stake,legs,totalOdds:slip.mode==='kombi'?Math.round(c.odds*100)/100:null});toast(`Spelet sparat: ${kr(c.total)} insats, möjlig utbetalning ${kr(c.payout)}.`);slip={legs:{},order:[],mode:slip.mode,stake:slip.stake};saveDraft();renderSlip();renderCoupon();document.getElementById('mybets').scrollIntoView({behavior:'smooth',block:'start'})}catch(err){toast('Kunde inte spara spelet.');$('saveSlip').disabled=false}};
+ try{await db.collection('slips').add({created:new Date().toISOString(),mode:slip.mode,stake:c.stake,legs,totalOdds:slip.mode==='kombi'?Math.round(c.odds*100)/100:null});toast(`Spelet är lagt: insats ${kr(c.total)}, möjlig utbetalning ${kr(c.payout)}.`);slip={legs:{},order:[],mode:slip.mode,stake:slip.stake};saveDraft();renderSlip();renderCoupon();document.getElementById('mybets').scrollIntoView({behavior:'smooth',block:'start'})}catch(err){toast('Kunde inte spara spelet.');$('saveSlip').disabled=false}};
 async function delBet(id,btn){if(btn.dataset.sure!=='1'){btn.dataset.sure='1';btn.textContent='Säker? Tryck igen';setTimeout(()=>{btn.dataset.sure='';btn.textContent='Ta bort'},4000);return}try{await db.doc('slips/'+id).delete()}catch(e){toast('Kunde inte ta bort spelet.')}}
 function legState(l){const m=matches[l.matchId];if(!m)return'pending';if(m.status==='void')return'void';if(m.status!=='post'||m.hs==null)return'pending';return grade(l.pick,m.hs,m.as)?'hit':'miss'}
 function settle(b){const st=b.legs.map(legState);
@@ -440,11 +443,12 @@ function betFigs(b,s){const st=b.mode==='kombi'?b.stake:b.stake*b.legs.length,mp
  if(s.state==='open')return`<div class="fig4"><div><b>${kr(st)}</b><span>insats</span></div><div><b>${od}</b><span>${b.mode==='kombi'?'totalodds':'odds'}</span></div><div><b class="g">${kr(mp)}</b><span>möjlig utbetalning</span></div><div><b class="g">${kr(mp-st)}</b><span>möjlig vinst</span></div></div>`;
  return`<div class="fig4"><div><b>${kr(st)}</b><span>insats</span></div><div><b>${od}</b><span>${b.mode==='kombi'?'totalodds':'odds'}</span></div><div><b>${kr(s.pay)}</b><span>utbetalt</span></div><div><b class="${s.pay-st>=0?'pos':'neg'}">${s.pay-st>=0?'+':''}${kr(s.pay-st)}</b><span>${s.pay-st>=0?'vinst':'förlust'}</span></div></div>`}
 function renderMine(){
- const rows=bets.map(b=>({b,s:settle(b)})),open=rows.filter(r=>r.s.state==='open');
+ const rows=bets.map(b=>({b,s:settle(b)})),open=rows.filter(r=>r.s.state==='open'),nd=legIds().length;
+ let draft='';if(nd){const c=calcSlip();draft=`<div class="t"><span>Din kupong · ${nd} ${nd===1?'match':'matcher'} · ${slip.mode==='kombi'?'kombination':'singlar'} · <b style="color:#ffb199">inte lagd än</b></span><a href="#kupong">Ändra</a></div><div class="fig4"><div><b>${kr(c.total)}</b><span>insats</span></div><div><b>${c.miss?'–':slip.mode==='kombi'?oddsTxt(c.odds):'per match'}</b><span>${slip.mode==='kombi'?'totalodds':'odds'}</span></div><div><b class="g">${c.miss?'–':kr(c.payout)}</b><span>möjlig utbetalning</span></div><div><b class="g">${c.miss?'–':kr(c.payout-c.total)}</b><span>möjlig vinst</span></div></div><button class="primary" data-save="1" style="margin-top:12px" ${$('saveSlip').disabled?'disabled':''}>Lägg spelet</button>${bets.length?'<hr style="border:0;border-top:1px solid var(--edge);margin:14px 0">':''}`}
  let ins=0,ut=0;for(const r of rows)if(r.s.state!=='open'){ins+=r.s.stake;ut+=r.s.pay}
  const st=open.reduce((t,r)=>t+r.s.stake,0),mp=open.reduce((t,r)=>t+maxPay(r.b),0),net=ut-ins;
- if(!bets.length){$('mybar').hidden=true}else{$('mybar').hidden=false;
-  $('mybar').innerHTML=`<div class="t"><span>${open.length?`Dina spel · ${open.length} pågår`:'Dina spel · alla avgjorda'}</span><a href="#mybets">Visa spelen</a></div><div class="fig4"><div><b>${kr(st)}</b><span>insatt i pågående</span></div><div><b class="g">${kr(mp)}</b><span>möjlig utbetalning</span></div><div><b class="g">${kr(mp-st)}</b><span>möjlig vinst</span></div><div><b class="${net>=0?'pos':'neg'}">${net>=0?'+':''}${kr(net)}</b><span>netto hittills</span></div></div>`}
+ if(!bets.length&&!nd){$('mybar').hidden=true}else if(!bets.length){$('mybar').hidden=false;$('mybar').innerHTML=draft}else{$('mybar').hidden=false;
+  $('mybar').innerHTML=draft+`<div class="t"><span>${open.length?`Dina spel · ${open.length} pågår`:'Dina spel · alla avgjorda'}</span><a href="#mybets">Visa spelen</a></div><div class="fig4"><div><b>${kr(st)}</b><span>insatt i pågående</span></div><div><b class="g">${kr(mp)}</b><span>möjlig utbetalning</span></div><div><b class="g">${kr(mp-st)}</b><span>möjlig vinst</span></div><div><b class="${net>=0?'pos':'neg'}">${net>=0?'+':''}${kr(net)}</b><span>netto hittills</span></div></div>`}
  if(!legIds().length){const sb=$('slipbar');if(open.length){sb.hidden=false;sb.href='#mybets';sb.innerHTML=`<span>Pågående spel · insats ${kr(st)}</span><b>${kr(mp)}</b>`}else sb.hidden=true}
 }
 function renderBets(){
