@@ -117,6 +117,11 @@ aside .panel{background:var(--glass);border:1px solid var(--edge);border-radius:
 .win .big{font-family:"Chakra Petch";font-size:clamp(30px,4vw,38px);font-weight:700;line-height:1.05;color:var(--hit);white-space:nowrap}
 .win .row2{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:var(--mute);margin-top:6px;flex-wrap:wrap}.win .row2 b{color:var(--ink);font-variant-numeric:tabular-nums}
 .warn{font-size:13px;color:#ffb199;margin:6px 0}
+.goal{margin:12px 0 4px;padding:12px;border-radius:14px;border:1px solid rgba(255,90,31,.45);background:rgba(255,90,31,.06)}
+.goal .lbl{margin-top:0;color:var(--ink);font-weight:600;font-size:14px}
+.goal .money{margin-top:6px}.goal .money{flex-wrap:nowrap}.goal .money label{flex:0 0 6.2em;line-height:1.25}.goal .money input{width:auto;flex:1 1 0;min-width:0}
+.goal button{width:100%;margin-top:10px;border-color:rgba(255,90,31,.6)}
+.goal .note{margin:8px 0 0}
 .budget{margin:8px 0 12px;border-top:1px solid var(--edge)}
 .budget p{font-size:14px;margin:6px 0}
 .primary{width:100%;background:var(--hot);border-color:var(--hot);color:#fff;font-weight:600}
@@ -180,6 +185,12 @@ aside .panel{background:var(--glass);border:1px solid var(--edge);border-radius:
 <div class="panel slip" id="kupong">
 <h2>Spelkupong<span id="slipcount"></span></h2>
 <p class="note" style="margin:0">Välj hur många av Claudes tips du vill spela, ändra val och odds om du vill, och se vad vinsten blir.</p>
+<div class="goal" id="goal"><div class="lbl">Bygg kupong efter önskad vinst</div>
+<div class="money"><label for="goalStake">Total insats</label><input id="goalStake" type="number" inputmode="decimal" min="1" step="10" value="1000"><span>kr</span></div>
+<div class="money"><label for="goalLo">Vill få tillbaka</label><input id="goalLo" type="number" inputmode="decimal" min="1" step="100" value="3000" aria-label="Från"><span>–</span><input id="goalHi" type="number" inputmode="decimal" min="1" step="100" value="5000" aria-label="Till"><span>kr</span></div>
+<p class="note" id="goalMul" style="margin:4px 0 0"></p>
+<button id="goalBtn">Låt Claude hitta spelen</button>
+<p class="note" id="goalNote">Sidan väljer bland Claudes tips (och skarpare varianter, t.ex. 2 i stället för X2) den kombination som når beloppet med störst chans enligt oddsen.</p></div>
 <div class="lbl">Antal matcher</div>
 <div class="nums" id="nums"></div>
 <div class="seg2"><button data-mode="kombi" aria-pressed="true">Kombination</button><button data-mode="single" aria-pressed="false">Singlar</button></div>
@@ -209,7 +220,7 @@ aside .panel{background:var(--glass);border:1px solid var(--edge);border-radius:
 <ol>
 <li>Varje morgon 09:41 letar Claude upp Premier League- och Champions League-matcher de närmaste dagarna, läser skadelistor och lägger tips här, med motivering och säkerhet 1–5.</li>
 <li>Under matchdagar kollar Claude resultaten varje timme och skickar en notis till din telefon vid mål och slutresultat. Med sidan öppen uppdateras allt live.</li>
-<li>Spelkupongen: välj 1–10 av Claudes tips, kombination eller singlar, och se möjlig vinst direkt. Sparade spel räknas av automatiskt under ”Mina spel”.</li>
+<li>Spelkupongen: välj 1–10 av Claudes tips, kombination eller singlar, och se möjlig vinst direkt. Eller ange insats och önskad utbetalning, så väljer sidan den kombination som når beloppet med störst chans.</li><li style="display:none"> Sparade spel räknas av automatiskt under ”Mina spel”.</li>
 <li>Facit räknas automatiskt. Bara tips som registrerats före avspark räknas, och varje kort visar när tipset lades. ”Pass” betyder att Claude avstod; de räknas inte.</li>
 </ol>
 <p class="note">Tips är underhållning, inte garantier. Spela bara för pengar du har råd att förlora. Stödlinjen: stodlinjen.se, 020-81 91 00.</p>
@@ -235,8 +246,9 @@ let liveOn=true,sound=false,unwatch=null,watchKey='',answers={};
 function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;$('toasts').prepend(el);setTimeout(()=>el.remove(),9000);if(sound)beep()}
 let actx=null;function beep(){try{actx=actx||new AudioContext();const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=880;g.gain.setValueAtTime(.15,actx.currentTime);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+.5);o.connect(g).connect(actx.destination);o.start();o.stop(actx.currentTime+.5)}catch(e){}}
 
-const list=()=>Object.values(matches);
 const valid=m=>!!m.tippedAt&&new Date(m.tippedAt).getTime()<new Date(m.kickoff).getTime();
+const list=()=>Object.values(matches).filter(valid);
+const shownEv=e=>!e.matchId||!matches[e.matchId]||valid(matches[e.matchId]);
 const tipped=()=>list().filter(m=>m.tip&&m.tip!=='PASS'&&valid(m));
 const decided=m=>m.tip&&m.tip!=='PASS'&&valid(m)&&m.status==='post'&&grade(m.tip,m.hs,m.as)!==null;
 function render(){renderStats();renderRing();renderTabs();renderCoupon();renderFeed();renderSlip();renderBets()}
@@ -292,7 +304,7 @@ function renderCoupon(){
   <details${answers[m.id]?' open':''}><summary>Motivering och skador</summary><p class="why"><b>${esc(m.tipText||TIPLBL[m.tip]||'')}</b>${m.tipText?'. ':''}${esc(m.reason||'')}</p><div class="inj"><div><h4>${esc(m.home)} saknar</h4>${li(m.injHome)}</div><div><h4>${esc(m.away)} saknar</h4>${li(m.injAway)}</div></div><p class="note">${m.tippedAt?`Tipset registrerades ${esc(fmtT(m.tippedAt))}, avspark ${esc(fmtT(m.kickoff))}.`:'Registreringstid saknas, tipset räknas inte.'}${ok?'':' Bara tips som registrerats före avspark räknas i facit.'}</p>${sample?`<div class="ask"><button data-ask="${esc(m.id)}">${m.status==='in'?'Claudes läge just nu':m.status==='post'?'Claudes efteranalys':'Fråga Claude om matchen'}</button></div>`:''}${answers[m.id]?`<div class="ans">${esc(answers[m.id])}</div>`:''}</details></article>`}).join('')+'</div>';
 }
 function renderFeed(){
- const ev=[...events].sort((a,b)=>String(b.at).localeCompare(String(a.at))).slice(0,40);
+ const ev=events.filter(shownEv).sort((a,b)=>String(b.at).localeCompare(String(a.at))).slice(0,40);
  $('feed').innerHTML=ev.length?ev.map(e=>`<li><time>${esc(fmtT(e.at))}</time>${esc(e.text)}</li>`).join(''):'<li class="note">Inga händelser ännu.</li>';
 }
 
@@ -361,6 +373,39 @@ function renderSlip(){
  $('slipbar').hidden=false;$('slipbar').href='#kupong';$('slipbar').innerHTML=`<span>Kupong · ${n} ${n===1?'match':'matcher'} · ${slip.mode==='kombi'?'odds '+(c.miss?'–':oddsTxt(c.odds)):'singlar'}</span><b>${c.miss?'–':kr(c.payout)}</b>`;
  renderAdvice();
 }
+/* ---------- Målvinst: hitta kombination ---------- */
+const num=v=>parseFloat(String(v).replace(',','.'));
+let goal=ls.get('tj-goal',null);if(goal){$('goalStake').value=goal.stake;$('goalLo').value=goal.lo;$('goalHi').value=goal.hi}
+let gm={lo:3,hi:5};const gStake=()=>num($('goalStake').value);
+function goalMul(){const s=gStake(),a=num($('goalLo').value),b=num($('goalHi').value);if(s>0){if(a>0)gm.lo=a/s;if(b>0)gm.hi=b/s}$('goalMul').textContent=s>0&&a>0&&b>0?`= ${String(Math.round(a/s*10)/10).replace('.',',')}–${String(Math.round(b/s*10)/10).replace('.',',')} gånger insatsen`:''}
+goalMul();
+$('goalStake').addEventListener('input',()=>{const s=gStake();if(s>0){$('goalLo').value=Math.round(s*gm.lo);$('goalHi').value=Math.round(s*gm.hi)}goalMul()});
+$('goalLo').addEventListener('input',goalMul);$('goalHi').addEventListener('input',goalMul);
+function findGoal(stake,lo,hi){
+ const VAR={'1':['1'],'X':['X'],'2':['2'],'1X':['1X','1'],'X2':['X2','2'],'12':['12','1','2'],'O2.5':['O2.5'],'U2.5':['U2.5']};
+ const ms=eligible().map(m=>({m,opts:(VAR[m.tip]||[]).map(p=>{const od=oddsFor(m,p);const pr=od&&od>1?probFor(m,p,od):null;return pr?{p,od,pr}:null}).filter(Boolean)})).filter(x=>x.opts.length);
+ if(!ms.length)return null;
+ const R=0.005,MAXB=Math.ceil(Math.log(hi/stake)/R)+2;
+ let st=new Map([['0|0',{s:0,b:0,n:0,legs:[]}]]);
+ for(const {m,opts} of ms){const nx=new Map(st);for(const v of st.values()){if(v.n>=10)continue;for(const o of opts){const b=v.b+Math.round(Math.log(o.od)/R);if(b>MAXB)continue;const s=v.s+Math.log(o.pr)+0.01*((m.confidence||3)-3)+(o.p===m.tip?0.003:0);const k=b+'|'+(v.n+1),cur=nx.get(k);if(!cur||s>cur.s)nx.set(k,{s,b,n:v.n+1,legs:v.legs.concat([{m,...o}])})}}st=nx}
+ let best=null,near=null;
+ for(const v of st.values()){if(!v.n)continue;const od=v.legs.reduce((p,l)=>p*l.od,1),pr=v.legs.reduce((p,l)=>p*l.pr,1),pay=stake*od,c={legs:v.legs,od,pr,pay,s:v.s};
+  if(pay>=lo-0.5&&pay<=hi+0.5){if(!best||c.s>best.s)best=c}
+  else{const d=pay<lo?Math.log(lo/pay):Math.log(pay/hi);if(!near||d<near.d-1e-9||(Math.abs(d-near.d)<1e-9&&c.s>near.s))near={...c,d}}}
+ return best?{...best,ok:true}:near?{...near,ok:false}:null}
+$('goalBtn').onclick=()=>{
+ const stake=num($('goalStake').value),lo=num($('goalLo').value),hi=num($('goalHi').value);
+ if(!(stake>0)||!(lo>stake)||!(hi>=lo)){$('goalNote').textContent='Fyll i en insats och ett belopp att få tillbaka som är större än insatsen (från ≤ till).';return}
+ ls.set('tj-goal',{stake,lo,hi});
+ const r=findGoal(stake,lo,hi);
+ if(!r){$('goalNote').textContent='Det finns inga kommande tips med odds att bygga en kupong av just nu. Nya tips kommer varje morgon.';return}
+ slip={legs:{},order:[],mode:'kombi',stake};for(const l of r.legs){slip.legs[l.m.id]={pick:l.p,odds:null};slip.order.push(l.m.id)}
+ saveDraft();renderSlip();renderCoupon();
+ const pct=r.pr*100,pt=pct<1?'under 1':Math.round(pct);
+ const changed=r.legs.filter(l=>l.p!==l.m.tip).length;
+ $('goalNote').innerHTML=(r.ok?`Claude valde <b>${r.legs.length} ${r.legs.length===1?'match':'matcher'}</b>, totalodds <b>${oddsTxt(r.od)}</b>: ${kr(stake)} blir <b>${kr(r.pay)}</b> om alla går in.`:`${kr(lo)}–${kr(hi)} gick inte att nå med de tips som finns nu. Närmast: <b>${r.legs.length} ${r.legs.length===1?'match':'matcher'}</b>, totalodds <b>${oddsTxt(r.od)}</b>, ${kr(r.pay)}.`)+` Chans enligt oddsen ≈ <b>${pt} %</b>.${changed?` ${changed} av spelen är skarpare än Claudes tips (högre odds, större risk).`:''} Högre vinst ger alltid lägre chans.`;
+ $('kupong').scrollIntoView({behavior:'smooth',block:'start'});
+};
 function renderAdvice(){
  if(!budget){$('advice').innerHTML='<p>Skriv in hur mycket du har råd att spela för per månad, pengar du klarar dig utan. Då föreslår sidan en insats.</p>';return}
  const k=Math.max(10,Math.round(budget*0.01/10)*10),s=Math.max(10,Math.round(budget*0.02/10)*10),r=Math.round(budget*0.1);
